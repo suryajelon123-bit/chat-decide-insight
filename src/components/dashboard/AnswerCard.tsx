@@ -2,7 +2,7 @@ import { ArrowDownRight, ArrowUpRight, Database, Lightbulb, ListChecks, Sparkles
 import type { Answer, AnswerBlock } from "@/lib/mock-data";
 import { Sparkline } from "./Sparkline";
 
-function Badge({ tone, children }: { tone: "fact" | "insight"; children: React.ReactNode }) {
+function Badge({ tone }: { tone: "fact" | "insight" }) {
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${
