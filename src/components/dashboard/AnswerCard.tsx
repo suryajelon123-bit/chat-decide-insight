@@ -1,8 +1,9 @@
 import { ArrowDownRight, ArrowUpRight, Database, Lightbulb, ListChecks, Sparkles, TrendingUp, ChevronRight, Share2 } from "lucide-react";
-import type { Answer, AnswerBlock } from "@/lib/mock-data";
+import { UI, type Answer, type AnswerBlock, type Language } from "@/lib/mock-data";
 import { Sparkline } from "./Sparkline";
 
-function Badge({ tone }: { tone: "fact" | "insight" }) {
+function Badge({ tone, language }: { tone: "fact" | "insight"; language: Language }) {
+  const t = UI[language];
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${
@@ -10,12 +11,13 @@ function Badge({ tone }: { tone: "fact" | "insight" }) {
       }`}
     >
       {tone === "fact" ? <Database className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
-      {tone === "fact" ? "Fact" : "Insight"}
+      {tone === "fact" ? t.fact : t.insight}
     </span>
   );
 }
 
-function BlockRenderer({ block, onFollowup }: { block: AnswerBlock; onFollowup?: (q: string) => void }) {
+function BlockRenderer({ block, onFollowup, language }: { block: AnswerBlock; onFollowup?: (q: string) => void; language: Language }) {
+  const t = UI[language];
   switch (block.type) {
     case "kpi":
       return (

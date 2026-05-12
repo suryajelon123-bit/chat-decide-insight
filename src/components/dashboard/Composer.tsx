@@ -1,14 +1,17 @@
 import { Mic, SendHorizonal, Sparkles } from "lucide-react";
 import { useState } from "react";
+import { UI, type Language } from "@/lib/mock-data";
 
 type Props = {
   onSubmit: (q: string) => void;
   suggestions: string[];
   busy: boolean;
+  language: Language;
 };
 
-export function Composer({ onSubmit, suggestions, busy }: Props) {
+export function Composer({ onSubmit, suggestions, busy, language }: Props) {
   const [value, setValue] = useState("");
+  const t = UI[language];
 
   const submit = () => {
     const v = value.trim();
@@ -45,7 +48,7 @@ export function Composer({ onSubmit, suggestions, busy }: Props) {
                 submit();
               }
             }}
-            placeholder="Ask about a metric, a trend, or what to do next…"
+            placeholder={t.composerPlaceholder}
             className="max-h-40 flex-1 resize-none bg-transparent px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
           <button
@@ -61,11 +64,11 @@ export function Composer({ onSubmit, suggestions, busy }: Props) {
             className="flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <SendHorizonal className="h-4 w-4" />
-            Ask
+            {t.ask}
           </button>
         </div>
         <div className="mt-2 text-center text-[10px] text-muted-foreground">
-          Lumen separates <span className="font-semibold text-fact">facts</span> from <span className="font-semibold text-insight">insights</span>. Always verify recommendations before action.
+          <span className="font-semibold text-fact">{t.fact}</span> · <span className="font-semibold text-insight">{t.insight}</span>
         </div>
       </div>
     </div>
