@@ -1,32 +1,49 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { LeftRail } from "@/components/dashboard/LeftRail";
 import { RightRail } from "@/components/dashboard/RightRail";
 import { ChatThread } from "@/components/dashboard/ChatThread";
 import { Composer } from "@/components/dashboard/Composer";
-import { generateAnswer, SUGGESTED_PROMPTS, type Language, type Turn } from "@/lib/mock-data";
+import {
+  COLLECTIVES_OPT,
+  generateAnswer,
+  RANGES_OPT,
+  STATES_OPT,
+  SUGGESTED_PROMPTS,
+  UI,
+  type Language,
+  type Turn,
+} from "@/lib/mock-data";
 import { PanelLeftOpen, PanelRightOpen } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Index,
   head: () => ({
     meta: [
-      { title: "Lumen — Conversational Analytics Workspace" },
-      { name: "description", content: "Ask metric questions in natural language. Get grounded answers, trend interpretations, likely causes, and recommended actions." },
+      { title: "Lumen — Shikshagraha Conversational Insights" },
+      { name: "description", content: "Ask anything about the Shikshagraha movement in English, हिन्दी, தமிழ், or ಕನ್ನಡ — get grounded answers from the live dashboard." },
     ],
   }),
 });
 
 function Index() {
-  const [role, setRole] = useState("Program Manager");
+  const [role, setRole] = useState<string>("Program Manager");
   const [language, setLanguage] = useState<Language>("en");
-  const [region, setRegion] = useState("North");
-  const [program, setProgram] = useState("Literacy");
-  const [dateRange, setDateRange] = useState("Last 7 days");
+  const [stateFilter, setStateFilter] = useState<string>(STATES_OPT.en[0]);
+  const [collective, setCollective] = useState<string>(COLLECTIVES_OPT.en[0]);
+  const [dateRange, setDateRange] = useState<string>(RANGES_OPT.en[1]);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
 
-  const suggestions = SUGGESTED_PROMPTS[role] ?? [];
+  // When language changes, re-localize the right-rail filter labels to the same index
+  useEffect(() => {
+    setStateFilter(STATES_OPT[language][0]);
+    setCollective(COLLECTIVES_OPT[language][0]);
+    setDateRange(RANGES_OPT[language][1]);
+  }, [language]);
+
+  const t = UI[language];
+  const starters = SUGGESTED_PROMPTS[language];
 
   const handleAsk = (q: string) => {
     if (busy) return;
@@ -37,19 +54,19 @@ function Index() {
       language,
       createdAt: new Date().toISOString(),
     };
-    setTurns((t) => [...t, userTurn]);
+    setTurns((prev) => [...prev, userTurn]);
     setBusy(true);
     setTimeout(() => {
       const answer = generateAnswer(q, language);
-      setTurns((t) => [...t, { id: crypto.randomUUID(), role: "assistant", answer }]);
+      setTurns((prev) => [...prev, { id: crypto.randomUUID(), role: "assistant", answer }]);
       setBusy(false);
     }, 900);
   };
 
   const latestAnswer = useMemo(() => {
     for (let i = turns.length - 1; i >= 0; i--) {
-      const t = turns[i];
-      if (t.role === "assistant") return t.answer;
+      const turn = turns[i];
+      if (turn.role === "assistant") return turn.answer;
     }
     return undefined;
   }, [turns]);
@@ -71,17 +88,22 @@ function Index() {
               <PanelLeftOpen className="h-4 w-4" />
             </button>
             <div>
-              <div className="text-sm font-semibold tracking-tight">Decision workspace</div>
+              <div className="text-sm font-semibold tracking-tight">{t.appTagline}</div>
               <div className="text-[11px] text-muted-foreground">
-                <span className="text-foreground/80">{role}</span> · {region} · {program} · {dateRange}
+                <span className="text-foreground/80">{role}</span> · {stateFilter} · {collective} · {dateRange}
               </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="hidden items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-success md:inline-flex">
-              <span className="h-1.5 w-1.5 rounded-full bg-success" />
-              Connected · 12 datasets
-            </span>
+            <a
+              href="https://dashboard.shikshagraha.org/"
+              target="_blank"
+              rel="noreferrer"
+              className="hidden items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-success md:inline-flex"
+            >
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
+              {t.trustChip}
+            </a>
             <button className="rounded-md p-1.5 text-muted-foreground hover:bg-surface-2 hover:text-foreground xl:hidden">
               <PanelRightOpen className="h-4 w-4" />
             </button>
@@ -89,20 +111,21 @@ function Index() {
         </header>
 
         <div className="min-h-0 flex-1">
-          <ChatThread turns={turns} busy={busy} onFollowup={handleAsk} />
+          <ChatThread turns={turns} busy={busy} onFollowup={handleAsk} language={language} starters={starters} />
         </div>
 
-        <Composer onSubmit={handleAsk} suggestions={suggestions} busy={busy} />
+        <Composer onSubmit={handleAsk} suggestions={starters.slice(0, 3)} busy={busy} language={language} />
       </main>
 
       <RightRail
-        region={region}
-        onRegionChange={setRegion}
-        program={program}
-        onProgramChange={setProgram}
+        state={stateFilter}
+        onStateChange={setStateFilter}
+        collective={collective}
+        onCollectiveChange={setCollective}
         dateRange={dateRange}
         onDateRangeChange={setDateRange}
         latestAnswer={latestAnswer}
+        language={language}
       />
     </div>
   );
