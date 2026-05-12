@@ -72,14 +72,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "MItra Dashboard" },
+      { name: "description", content: "Insight Conversation is a chat-first decision workspace that provides metric answers and insights in natural language." },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "MItra Dashboard" },
+      { property: "og:description", content: "Insight Conversation is a chat-first decision workspace that provides metric answers and insights in natural language." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "MItra Dashboard" },
+      { name: "twitter:description", content: "Insight Conversation is a chat-first decision workspace that provides metric answers and insights in natural language." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7aaafed6-b7eb-4c4d-8478-2c4ad53f327e/id-preview-ec751bf6--2a6f594a-c009-4f34-8323-00bb3c18e8b6.lovable.app-1778579618573.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7aaafed6-b7eb-4c4d-8478-2c4ad53f327e/id-preview-ec751bf6--2a6f594a-c009-4f34-8323-00bb3c18e8b6.lovable.app-1778579618573.png" },
     ],
     links: [
       {
