@@ -153,7 +153,8 @@ function BlockRenderer({ block, onFollowup, language }: { block: AnswerBlock; on
   }
 }
 
-export function AnswerCard({ answer, onFollowup }: { answer: Answer; onFollowup?: (q: string) => void }) {
+export function AnswerCard({ answer, onFollowup, language }: { answer: Answer; onFollowup?: (q: string) => void; language: Language }) {
+  const t = UI[language];
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
@@ -164,10 +165,10 @@ export function AnswerCard({ answer, onFollowup }: { answer: Answer; onFollowup?
           <span>·</span>
           <span>{answer.source.timeRange}</span>
           <span>·</span>
-          <span className="font-mono">{answer.source.rows.toLocaleString()} rows</span>
+          <span className="font-mono">{answer.source.rows.toLocaleString()}</span>
         </div>
         <button className="inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-surface-2 hover:text-foreground">
-          <Share2 className="h-3 w-3" /> Share
+          <Share2 className="h-3 w-3" /> {t.share}
         </button>
       </div>
 
@@ -175,7 +176,7 @@ export function AnswerCard({ answer, onFollowup }: { answer: Answer; onFollowup?
         {answer.blocks
           .filter((b) => b.type === "kpi" || b.type === "trend")
           .map((b, i) => (
-            <BlockRenderer key={i} block={b} />
+            <BlockRenderer key={i} block={b} language={language} />
           ))}
       </div>
 
@@ -183,14 +184,14 @@ export function AnswerCard({ answer, onFollowup }: { answer: Answer; onFollowup?
         {answer.blocks
           .filter((b) => b.type !== "kpi" && b.type !== "trend" && b.type !== "followups")
           .map((b, i) => (
-            <BlockRenderer key={i} block={b} />
+            <BlockRenderer key={i} block={b} language={language} />
           ))}
       </div>
 
       {answer.blocks
         .filter((b) => b.type === "followups")
         .map((b, i) => (
-          <BlockRenderer key={`f-${i}`} block={b} onFollowup={onFollowup} />
+          <BlockRenderer key={`f-${i}`} block={b} onFollowup={onFollowup} language={language} />
         ))}
     </div>
   );
