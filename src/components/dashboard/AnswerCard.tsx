@@ -27,7 +27,7 @@ function BlockRenderer({ block, onFollowup, language }: { block: AnswerBlock; on
               <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{block.label}</div>
               <div className="mt-2 font-mono text-4xl font-semibold tracking-tight text-foreground">{block.value}</div>
             </div>
-            <Badge tone="fact" />
+            <Badge tone="fact" language={language} />
           </div>
           {block.delta && (
             <div className={`mt-3 inline-flex items-center gap-1 text-sm font-medium ${
@@ -49,7 +49,7 @@ function BlockRenderer({ block, onFollowup, language }: { block: AnswerBlock; on
               </div>
               <div className="mt-1 text-xs text-muted-foreground">{block.period}</div>
             </div>
-            <Badge tone="fact" />
+            <Badge tone="fact" language={language} />
           </div>
           <div className="mt-4">
             <Sparkline points={block.points} height={72} />
@@ -61,9 +61,9 @@ function BlockRenderer({ block, onFollowup, language }: { block: AnswerBlock; on
         <div className="animate-rise-delay-2 rounded-xl bg-surface-1 p-5 ring-insight">
           <div className="mb-2 flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-insight">
-              <Lightbulb className="h-3.5 w-3.5" /> Interpretation
+              <Lightbulb className="h-3.5 w-3.5" /> {t.interpretation}
             </div>
-            <Badge tone="insight" />
+            <Badge tone="insight" language={language} />
           </div>
           <p className="text-sm leading-relaxed text-foreground/90">{block.text}</p>
         </div>
@@ -73,9 +73,9 @@ function BlockRenderer({ block, onFollowup, language }: { block: AnswerBlock; on
         <div className="animate-rise-delay-2 rounded-xl bg-surface-1 p-5 ring-insight">
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-insight">
-              <Sparkles className="h-3.5 w-3.5" /> Likely drivers
+              <Sparkles className="h-3.5 w-3.5" /> {t.drivers}
             </div>
-            <Badge tone="insight" />
+            <Badge tone="insight" language={language} />
           </div>
           <ul className="space-y-2">
             {block.items.map((d, i) => (
@@ -94,7 +94,7 @@ function BlockRenderer({ block, onFollowup, language }: { block: AnswerBlock; on
         <div className="animate-rise-delay-3 rounded-xl bg-surface-2 p-5 ring-fact">
           <div className="mb-3 flex items-center justify-between">
             <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{block.label}</div>
-            <Badge tone="fact" />
+            <Badge tone="fact" language={language} />
           </div>
           <div className="divide-y divide-border/60">
             {block.rows.map((r) => (
@@ -116,9 +116,9 @@ function BlockRenderer({ block, onFollowup, language }: { block: AnswerBlock; on
         <div className="animate-rise-delay-3 rounded-xl bg-gradient-to-br from-insight/10 to-transparent p-5 ring-insight">
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-insight">
-              <ListChecks className="h-3.5 w-3.5" /> Recommended remedials
+              <ListChecks className="h-3.5 w-3.5" /> {t.remedials}
             </div>
-            <Badge tone="insight" />
+            <Badge tone="insight" language={language} />
           </div>
           <ol className="space-y-2.5">
             {block.items.map((r, i) => (
