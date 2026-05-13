@@ -14,7 +14,9 @@ import {
   type Language,
   type Turn,
 } from "@/lib/mock-data";
-import { PanelLeftOpen, PanelRightOpen } from "lucide-react";
+import { Download, FileSpreadsheet, FileText, FileType, PanelLeftOpen, PanelRightOpen } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { exportCSV, exportExcel, exportPDF } from "@/lib/export-conversation";
 
 export const Route = createFileRoute("/")({
   component: Index,
