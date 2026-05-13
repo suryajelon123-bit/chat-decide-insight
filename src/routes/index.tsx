@@ -14,7 +14,9 @@ import {
   type Language,
   type Turn,
 } from "@/lib/mock-data";
-import { PanelLeftOpen, PanelRightOpen } from "lucide-react";
+import { Download, FileSpreadsheet, FileText, FileType, PanelLeftOpen, PanelRightOpen } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { exportCSV, exportExcel, exportPDF } from "@/lib/export-conversation";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -104,6 +106,50 @@ function Index() {
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
               {t.trustChip}
             </a>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                disabled={turns.length === 0}
+                className="inline-flex items-center gap-1.5 rounded-md bg-gradient-to-r from-fact to-insight px-3 py-1.5 text-xs font-semibold text-background shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Export
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Export conversation</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() =>
+                    exportPDF(turns, language, `${role} · ${stateFilter} · ${collective} · ${dateRange}`)
+                  }
+                >
+                  <FileType className="mr-2 h-4 w-4 text-rose-500" />
+                  <div className="flex flex-col">
+                    <span className="text-sm">PDF report</span>
+                    <span className="text-[10px] text-muted-foreground">Conversation + KPI snapshot</span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    exportExcel(turns, language, `${role} · ${stateFilter} · ${collective} · ${dateRange}`)
+                  }
+                >
+                  <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500" />
+                  <div className="flex flex-col">
+                    <span className="text-sm">Excel workbook</span>
+                    <span className="text-[10px] text-muted-foreground">Metrics · Conversation · Breakdowns · Sources</span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportCSV(turns, language)}>
+                  <FileText className="mr-2 h-4 w-4 text-sky-500" />
+                  <div className="flex flex-col">
+                    <span className="text-sm">CSV file</span>
+                    <span className="text-[10px] text-muted-foreground">Flat row-per-block export</span>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <button className="rounded-md p-1.5 text-muted-foreground hover:bg-surface-2 hover:text-foreground xl:hidden">
               <PanelRightOpen className="h-4 w-4" />
             </button>
