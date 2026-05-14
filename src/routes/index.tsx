@@ -1,17 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { LeftRail } from "@/components/dashboard/LeftRail";
 import { RightRail } from "@/components/dashboard/RightRail";
 import { ChatThread } from "@/components/dashboard/ChatThread";
 import { Composer } from "@/components/dashboard/Composer";
 import {
-  COLLECTIVES_OPT,
   generateAnswer,
+  PROGRAM_LABELS,
   RANGES_OPT,
-  STATES_OPT,
+  STATE_LABELS,
   SUGGESTED_PROMPTS,
   UI,
   type Language,
+  type ProgramKey,
+  type StateKey,
   type Turn,
 } from "@/lib/mock-data";
 import { Download, FileSpreadsheet, FileText, FileType, PanelLeftOpen, PanelRightOpen } from "lucide-react";
@@ -22,8 +24,8 @@ export const Route = createFileRoute("/")({
   component: Index,
   head: () => ({
     meta: [
-      { title: "Lumen — Shikshagraha Conversational Insights" },
-      { name: "description", content: "Ask anything about the Shikshagraha movement in English, हिन्दी, தமிழ், or ಕನ್ನಡ — get grounded answers from the live dashboard." },
+      { title: "Lumen — MITRA Conversational Insights" },
+      { name: "description", content: "Ask anything about MITRA — Bihar Chaupal, Karnataka Chavadi, and Micro-Improvement story conversations. Multilingual: English, हिन्दी, தமிழ், ಕನ್ನಡ." },
     ],
   }),
 });
@@ -31,21 +33,16 @@ export const Route = createFileRoute("/")({
 function Index() {
   const [role, setRole] = useState<string>("Program Manager");
   const [language, setLanguage] = useState<Language>("en");
-  const [stateFilter, setStateFilter] = useState<string>(STATES_OPT.en[0]);
-  const [collective, setCollective] = useState<string>(COLLECTIVES_OPT.en[0]);
-  const [dateRange, setDateRange] = useState<string>(RANGES_OPT.en[1]);
+  const [stateFilter, setStateFilter] = useState<StateKey>("all");
+  const [program, setProgram] = useState<ProgramKey>("all");
+  const [rangeKey, setRangeKey] = useState<string>("30d");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [busy, setBusy] = useState(false);
 
-  // When language changes, re-localize the right-rail filter labels to the same index
-  useEffect(() => {
-    setStateFilter(STATES_OPT[language][0]);
-    setCollective(COLLECTIVES_OPT[language][0]);
-    setDateRange(RANGES_OPT[language][1]);
-  }, [language]);
-
   const t = UI[language];
   const starters = SUGGESTED_PROMPTS[language];
+  const rangeLabel = RANGES_OPT[language].find((r) => r.key === rangeKey)?.label ?? rangeKey;
+  const contextLine = `${role} · ${PROGRAM_LABELS[language][program]} · ${STATE_LABELS[language][stateFilter]} · ${rangeLabel}`;
 
   const handleAsk = (q: string) => {
     if (busy) return;
@@ -59,10 +56,10 @@ function Index() {
     setTurns((prev) => [...prev, userTurn]);
     setBusy(true);
     setTimeout(() => {
-      const answer = generateAnswer(q, language);
+      const answer = generateAnswer(q, language, { program, state: stateFilter, rangeKey, rangeLabel });
       setTurns((prev) => [...prev, { id: crypto.randomUUID(), role: "assistant", answer }]);
       setBusy(false);
-    }, 900);
+    }, 800);
   };
 
   const latestAnswer = useMemo(() => {
@@ -91,14 +88,12 @@ function Index() {
             </button>
             <div>
               <div className="text-sm font-semibold tracking-tight">{t.appTagline}</div>
-              <div className="text-[11px] text-muted-foreground">
-                <span className="text-foreground/80">{role}</span> · {stateFilter} · {collective} · {dateRange}
-              </div>
+              <div className="text-[11px] text-muted-foreground">{contextLine}</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <a
-              href="https://dashboard.shikshagraha.org/"
+              href="https://elevate.shikshalokam.org/"
               target="_blank"
               rel="noreferrer"
               className="hidden items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-success md:inline-flex"
@@ -118,22 +113,14 @@ function Index() {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>Export conversation</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() =>
-                    exportPDF(turns, language, `${role} · ${stateFilter} · ${collective} · ${dateRange}`)
-                  }
-                >
+                <DropdownMenuItem onClick={() => exportPDF(turns, language, contextLine)}>
                   <FileType className="mr-2 h-4 w-4 text-rose-500" />
                   <div className="flex flex-col">
                     <span className="text-sm">PDF report</span>
                     <span className="text-[10px] text-muted-foreground">Conversation + KPI snapshot</span>
                   </div>
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() =>
-                    exportExcel(turns, language, `${role} · ${stateFilter} · ${collective} · ${dateRange}`)
-                  }
-                >
+                <DropdownMenuItem onClick={() => exportExcel(turns, language, contextLine)}>
                   <FileSpreadsheet className="mr-2 h-4 w-4 text-emerald-500" />
                   <div className="flex flex-col">
                     <span className="text-sm">Excel workbook</span>
@@ -166,10 +153,10 @@ function Index() {
       <RightRail
         state={stateFilter}
         onStateChange={setStateFilter}
-        collective={collective}
-        onCollectiveChange={setCollective}
-        dateRange={dateRange}
-        onDateRangeChange={setDateRange}
+        program={program}
+        onProgramChange={setProgram}
+        rangeKey={rangeKey}
+        onRangeChange={setRangeKey}
         latestAnswer={latestAnswer}
         language={language}
       />

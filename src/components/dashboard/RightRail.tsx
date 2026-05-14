@@ -1,13 +1,24 @@
-import { Calendar, Database, Filter, Info, MapPin, ShieldCheck, Users } from "lucide-react";
-import { COLLECTIVES_OPT, RANGES_OPT, STATES_OPT, UI, type Answer, type Language } from "@/lib/mock-data";
+import { Calendar, Database, Filter, Info, Layers, MapPin, ShieldCheck } from "lucide-react";
+import {
+  PROGRAM_KEYS,
+  PROGRAM_LABELS,
+  RANGES_OPT,
+  STATE_KEYS,
+  STATE_LABELS,
+  UI,
+  type Answer,
+  type Language,
+  type ProgramKey,
+  type StateKey,
+} from "@/lib/mock-data";
 
 type Props = {
-  state: string;
-  onStateChange: (r: string) => void;
-  collective: string;
-  onCollectiveChange: (p: string) => void;
-  dateRange: string;
-  onDateRangeChange: (d: string) => void;
+  state: StateKey;
+  onStateChange: (s: StateKey) => void;
+  program: ProgramKey;
+  onProgramChange: (p: ProgramKey) => void;
+  rangeKey: string;
+  onRangeChange: (r: string) => void;
   latestAnswer?: Answer;
   language: Language;
 };
@@ -25,7 +36,7 @@ function Pill({ active, onClick, children }: { active: boolean; onClick: () => v
   );
 }
 
-export function RightRail({ state, onStateChange, collective, onCollectiveChange, dateRange, onDateRangeChange, latestAnswer, language }: Props) {
+export function RightRail({ state, onStateChange, program, onProgramChange, rangeKey, onRangeChange, latestAnswer, language }: Props) {
   const t = UI[language];
   return (
     <aside className="hidden h-full w-80 shrink-0 flex-col border-l border-border bg-surface-1/60 xl:flex">
@@ -35,21 +46,27 @@ export function RightRail({ state, onStateChange, collective, onCollectiveChange
         </div>
         <div className="mt-3 space-y-4">
           <div>
-            <div className="mb-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground"><MapPin className="h-3 w-3" /> {t.state}</div>
+            <div className="mb-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground"><Layers className="h-3 w-3" /> {t.program}</div>
             <div className="flex flex-wrap gap-1.5">
-              {STATES_OPT[language].map((r) => <Pill key={r} active={state === r} onClick={() => onStateChange(r)}>{r}</Pill>)}
+              {PROGRAM_KEYS.map((p) => (
+                <Pill key={p} active={program === p} onClick={() => onProgramChange(p)}>{PROGRAM_LABELS[language][p]}</Pill>
+              ))}
             </div>
           </div>
           <div>
-            <div className="mb-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground"><Users className="h-3 w-3" /> {t.collective}</div>
+            <div className="mb-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground"><MapPin className="h-3 w-3" /> {t.state}</div>
             <div className="flex flex-wrap gap-1.5">
-              {COLLECTIVES_OPT[language].map((p) => <Pill key={p} active={collective === p} onClick={() => onCollectiveChange(p)}>{p}</Pill>)}
+              {STATE_KEYS.map((s) => (
+                <Pill key={s} active={state === s} onClick={() => onStateChange(s)}>{STATE_LABELS[language][s]}</Pill>
+              ))}
             </div>
           </div>
           <div>
             <div className="mb-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground"><Calendar className="h-3 w-3" /> {t.dateRange}</div>
             <div className="flex flex-wrap gap-1.5">
-              {RANGES_OPT[language].map((d) => <Pill key={d} active={dateRange === d} onClick={() => onDateRangeChange(d)}>{d}</Pill>)}
+              {RANGES_OPT[language].map((r) => (
+                <Pill key={r.key} active={rangeKey === r.key} onClick={() => onRangeChange(r.key)}>{r.label}</Pill>
+              ))}
             </div>
           </div>
         </div>
@@ -93,7 +110,7 @@ export function RightRail({ state, onStateChange, collective, onCollectiveChange
           <span>{t.groundedNote}</span>
         </div>
         <div className="mt-2 flex items-center justify-center">
-          <a href="https://dashboard.shikshagraha.org/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-success">
+          <a href="https://elevate.shikshalokam.org/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-full bg-success/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-success">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
             <Database className="h-3 w-3" /> {t.trustChip}
           </a>
