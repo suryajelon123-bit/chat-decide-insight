@@ -46,13 +46,12 @@ export const PROGRAM_LABELS: Record<Language, Record<ProgramKey, string>> = {
     mi_karnataka: "सूक्ष्म सुधार · कर्नाटक",
   },
   ta: {
-    en: "அனைத்து திட்டங்கள்",
     all: "அனைத்து திட்டங்கள்",
     chaupal_bihar: "சௌபால் · பீகார்",
     chavadi_karnataka: "சாவடி · கர்நாடகா",
     mi_bihar: "நுண் முன்னேற்றம் · பீகார்",
     mi_karnataka: "நுண் முன்னேற்றம் · கர்நாடகா",
-  } as Record<ProgramKey, string>,
+  },
   kn: {
     all: "ಎಲ್ಲಾ ಕಾರ್ಯಕ್ರಮಗಳು",
     chaupal_bihar: "ಚೌಪಾಲ್ · ಬಿಹಾರ",
