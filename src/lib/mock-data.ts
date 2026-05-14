@@ -1,3 +1,5 @@
+import metricsJson from "./mitra-metrics.json";
+
 export type Language = "en" | "hi" | "ta" | "kn";
 
 export type AnswerBlock =
@@ -9,22 +11,8 @@ export type AnswerBlock =
   | { type: "breakdown"; label: string; rows: { name: string; value: string; delta?: string; tone?: "pos" | "neg" }[] }
   | { type: "followups"; items: string[] };
 
-export type Source = {
-  table: string;
-  filters: string[];
-  timeRange: string;
-  rows: number;
-};
-
-export type Answer = {
-  id: string;
-  question: string;
-  language: Language;
-  source: Source;
-  blocks: AnswerBlock[];
-  createdAt: string;
-};
-
+export type Source = { table: string; filters: string[]; timeRange: string; rows: number };
+export type Answer = { id: string; question: string; language: Language; source: Source; blocks: AnswerBlock[]; createdAt: string };
 export type Turn =
   | { id: string; role: "user"; text: string; language: Language; createdAt: string }
   | { id: string; role: "assistant"; answer: Answer };
@@ -37,6 +25,75 @@ export const LANGUAGES: { code: Language; label: string; native: string }[] = [
 ];
 
 export const ROLES = ["Program Manager", "State Lead", "District Lead"] as const;
+
+// ---------------- Programs / Filters ----------------
+export type ProgramKey = "all" | "chaupal_bihar" | "chavadi_karnataka" | "mi_bihar" | "mi_karnataka";
+export type StateKey = "all" | "Bihar" | "Karnataka";
+
+export const PROGRAM_LABELS: Record<Language, Record<ProgramKey, string>> = {
+  en: {
+    all: "All programs",
+    chaupal_bihar: "Chaupal · Bihar",
+    chavadi_karnataka: "Chavadi · Karnataka",
+    mi_bihar: "Micro-Improvement · Bihar",
+    mi_karnataka: "Micro-Improvement · Karnataka",
+  },
+  hi: {
+    all: "सभी कार्यक्रम",
+    chaupal_bihar: "चौपाल · बिहार",
+    chavadi_karnataka: "चावड़ी · कर्नाटक",
+    mi_bihar: "सूक्ष्म सुधार · बिहार",
+    mi_karnataka: "सूक्ष्म सुधार · कर्नाटक",
+  },
+  ta: {
+    en: "அனைத்து திட்டங்கள்",
+    all: "அனைத்து திட்டங்கள்",
+    chaupal_bihar: "சௌபால் · பீகார்",
+    chavadi_karnataka: "சாவடி · கர்நாடகா",
+    mi_bihar: "நுண் முன்னேற்றம் · பீகார்",
+    mi_karnataka: "நுண் முன்னேற்றம் · கர்நாடகா",
+  } as Record<ProgramKey, string>,
+  kn: {
+    all: "ಎಲ್ಲಾ ಕಾರ್ಯಕ್ರಮಗಳು",
+    chaupal_bihar: "ಚೌಪಾಲ್ · ಬಿಹಾರ",
+    chavadi_karnataka: "ಚಾವಡಿ · ಕರ್ನಾಟಕ",
+    mi_bihar: "ಸೂಕ್ಷ್ಮ ಸುಧಾರಣೆ · ಬಿಹಾರ",
+    mi_karnataka: "ಸೂಕ್ಷ್ಮ ಸುಧಾರಣೆ · ಕರ್ನಾಟಕ",
+  },
+};
+
+export const STATE_LABELS: Record<Language, Record<StateKey, string>> = {
+  en: { all: "All states", Bihar: "Bihar", Karnataka: "Karnataka" },
+  hi: { all: "सभी राज्य", Bihar: "बिहार", Karnataka: "कर्नाटक" },
+  ta: { all: "அனைத்து மாநிலங்கள்", Bihar: "பீகார்", Karnataka: "கர்நாடகா" },
+  kn: { all: "ಎಲ್ಲಾ ರಾಜ್ಯಗಳು", Bihar: "ಬಿಹಾರ", Karnataka: "ಕರ್ನಾಟಕ" },
+};
+
+export const PROGRAM_KEYS: ProgramKey[] = ["all", "chaupal_bihar", "chavadi_karnataka", "mi_bihar", "mi_karnataka"];
+export const STATE_KEYS: StateKey[] = ["all", "Bihar", "Karnataka"];
+
+export const RANGES_OPT: Record<Language, { key: string; label: string }[]> = {
+  en: [
+    { key: "7d", label: "Last 7 days" },
+    { key: "30d", label: "Last 30 days" },
+    { key: "all", label: "All time" },
+  ],
+  hi: [
+    { key: "7d", label: "पिछले 7 दिन" },
+    { key: "30d", label: "पिछले 30 दिन" },
+    { key: "all", label: "अब तक" },
+  ],
+  ta: [
+    { key: "7d", label: "கடந்த 7 நாட்கள்" },
+    { key: "30d", label: "கடந்த 30 நாட்கள்" },
+    { key: "all", label: "இதுவரை" },
+  ],
+  kn: [
+    { key: "7d", label: "ಕಳೆದ 7 ದಿನಗಳು" },
+    { key: "30d", label: "ಕಳೆದ 30 ದಿನಗಳು" },
+    { key: "all", label: "ಇಲ್ಲಿಯವರೆಗೆ" },
+  ],
+};
 
 // ---------------- UI strings ----------------
 type UIStrings = {
@@ -53,7 +110,7 @@ type UIStrings = {
   thinking: string;
   contextHeader: string;
   state: string;
-  collective: string;
+  program: string;
   dateRange: string;
   sourceTrace: string;
   table: string;
@@ -74,27 +131,27 @@ type UIStrings = {
 
 export const UI: Record<Language, UIStrings> = {
   en: {
-    appTagline: "Shikshagraha Insights",
+    appTagline: "MITRA Conversational Insights",
     newConversation: "New conversation",
     role: "Role",
     saved: "Saved prompts",
     recent: "Recent threads",
     language: "Language",
-    welcomeTitle: "Ask anything about the Shikshagraha movement",
-    welcomeSubtitle: "Real-time numbers from the Shikshagraha dashboard — micro-improvements, leaders, schools, and community impact. Ask in your language, get answers in your language.",
-    composerPlaceholder: "Ask about a metric, trend, or what to do next…",
+    welcomeTitle: "Ask anything about MITRA",
+    welcomeSubtitle: "Live data from MITRA — Chaupal (Bihar), Chavadi (Karnataka), and Micro-Improvement story conversations. Ask in your language, get answers in your language.",
+    composerPlaceholder: "Ask about engagement, drop-off, top topics, or what to do next…",
     ask: "Ask",
-    thinking: "Querying dashboard, grounding response…",
+    thinking: "Querying MITRA conversations…",
     contextHeader: "Active context",
     state: "State",
-    collective: "Collective",
+    program: "Program",
     dateRange: "Date range",
     sourceTrace: "Source trace",
-    table: "Table",
+    table: "Dataset",
     filters: "Filters applied",
     timeRange: "Time range",
     rows: "Rows scanned",
-    groundedNote: "Grounded responses. Metric values come from the Shikshagraha dashboard. Insights and remedials are AI-generated and clearly labeled.",
+    groundedNote: "Grounded responses. Numbers come from MITRA conversation logs (Chaupal, Chavadi, MI). Insights and remedials are AI-generated and clearly labeled.",
     followupHeader: "Ask a follow-up",
     fact: "Fact",
     insight: "Insight",
@@ -103,30 +160,30 @@ export const UI: Record<Language, UIStrings> = {
     remedials: "Recommended actions",
     starterHeader: "Try one of these to get started",
     share: "Share",
-    trustChip: "Live · Shikshagraha dashboard",
+    trustChip: "Live · MITRA",
   },
   hi: {
-    appTagline: "शिक्षाग्रह इनसाइट्स",
+    appTagline: "MITRA संवाद इनसाइट्स",
     newConversation: "नई बातचीत",
     role: "भूमिका",
     saved: "सहेजे गए प्रश्न",
     recent: "हाल की बातचीत",
     language: "भाषा",
-    welcomeTitle: "शिक्षाग्रह आंदोलन के बारे में कुछ भी पूछें",
-    welcomeSubtitle: "शिक्षाग्रह डैशबोर्ड से लाइव आंकड़े — सूक्ष्म सुधार, नेता, स्कूल और सामुदायिक प्रभाव। अपनी भाषा में पूछें, अपनी भाषा में उत्तर पाएं।",
-    composerPlaceholder: "किसी मीट्रिक, ट्रेंड या अगले कदम के बारे में पूछें…",
+    welcomeTitle: "MITRA के बारे में कुछ भी पूछें",
+    welcomeSubtitle: "MITRA से लाइव डेटा — चौपाल (बिहार), चावड़ी (कर्नाटक) और सूक्ष्म सुधार कहानियाँ। अपनी भाषा में पूछें, अपनी भाषा में उत्तर पाएं।",
+    composerPlaceholder: "भागीदारी, छूटना, मुख्य विषय या अगले कदम के बारे में पूछें…",
     ask: "पूछें",
-    thinking: "डैशबोर्ड से डेटा निकाला जा रहा है…",
+    thinking: "MITRA संवाद से डेटा निकाला जा रहा है…",
     contextHeader: "सक्रिय संदर्भ",
     state: "राज्य",
-    collective: "सामूहिक",
+    program: "कार्यक्रम",
     dateRange: "अवधि",
     sourceTrace: "स्रोत विवरण",
-    table: "तालिका",
+    table: "डेटासेट",
     filters: "लागू फ़िल्टर",
     timeRange: "समय सीमा",
     rows: "स्कैन की गई पंक्तियाँ",
-    groundedNote: "तथ्य आधारित उत्तर। आंकड़े शिक्षाग्रह डैशबोर्ड से हैं। व्याख्या और सुझाव AI द्वारा उत्पन्न हैं।",
+    groundedNote: "तथ्य आधारित उत्तर। आंकड़े MITRA संवाद लॉग से हैं। व्याख्या और सुझाव AI द्वारा उत्पन्न हैं।",
     followupHeader: "एक और प्रश्न पूछें",
     fact: "तथ्य",
     insight: "विश्लेषण",
@@ -135,30 +192,30 @@ export const UI: Record<Language, UIStrings> = {
     remedials: "सुझाई गई कार्रवाई",
     starterHeader: "शुरू करने के लिए इनमें से एक चुनें",
     share: "साझा करें",
-    trustChip: "लाइव · शिक्षाग्रह डैशबोर्ड",
+    trustChip: "लाइव · MITRA",
   },
   ta: {
-    appTagline: "ஷிக்ஷாக்ரஹா நுண்ணறிவு",
+    appTagline: "MITRA உரையாடல் நுண்ணறிவு",
     newConversation: "புதிய உரையாடல்",
     role: "பங்கு",
     saved: "சேமித்த கேள்விகள்",
     recent: "சமீபத்திய உரையாடல்கள்",
     language: "மொழி",
-    welcomeTitle: "ஷிக்ஷாக்ரஹா இயக்கம் பற்றி எதையும் கேளுங்கள்",
-    welcomeSubtitle: "ஷிக்ஷாக்ரஹா டாஷ்போர்டில் இருந்து நேரடி எண்கள் — நுண் முன்னேற்றங்கள், தலைவர்கள், பள்ளிகள், சமூக தாக்கம். உங்கள் மொழியில் கேளுங்கள், உங்கள் மொழியில் பதில் பெறுங்கள்.",
-    composerPlaceholder: "ஒரு அளவீடு, போக்கு அல்லது அடுத்த நடவடிக்கை பற்றி கேளுங்கள்…",
+    welcomeTitle: "MITRA பற்றி எதையும் கேளுங்கள்",
+    welcomeSubtitle: "MITRA-வில் இருந்து நேரடி தரவு — சௌபால் (பீகார்), சாவடி (கர்நாடகா), நுண் முன்னேற்ற கதைகள். உங்கள் மொழியில் கேளுங்கள், உங்கள் மொழியில் பதில் பெறுங்கள்.",
+    composerPlaceholder: "ஈடுபாடு, விலகல், முன்னணி தலைப்புகள் அல்லது அடுத்த நடவடிக்கை பற்றி கேளுங்கள்…",
     ask: "கேள்",
-    thinking: "டாஷ்போர்டில் இருந்து தரவு பெறப்படுகிறது…",
+    thinking: "MITRA உரையாடல்களில் இருந்து தரவு பெறப்படுகிறது…",
     contextHeader: "செயல் சூழல்",
     state: "மாநிலம்",
-    collective: "கூட்டு",
+    program: "திட்டம்",
     dateRange: "கால அளவு",
     sourceTrace: "மூல விவரம்",
-    table: "அட்டவணை",
+    table: "தரவுத்தொகுப்பு",
     filters: "பயன்படுத்திய வடிகட்டிகள்",
     timeRange: "கால வரம்பு",
     rows: "ஸ்கேன் செய்யப்பட்ட வரிசைகள்",
-    groundedNote: "உண்மை அடிப்படையிலான பதில்கள். எண்கள் ஷிக்ஷாக்ரஹா டாஷ்போர்டில் இருந்து. விளக்கம் மற்றும் பரிந்துரைகள் AI மூலம் உருவாக்கப்பட்டவை.",
+    groundedNote: "உண்மை அடிப்படையிலான பதில்கள். எண்கள் MITRA உரையாடல் பதிவுகளில் இருந்து. விளக்கம் மற்றும் பரிந்துரைகள் AI மூலம் உருவாக்கப்பட்டவை.",
     followupHeader: "மேலும் ஒரு கேள்வி கேளுங்கள்",
     fact: "உண்மை",
     insight: "நுண்ணறிவு",
@@ -167,30 +224,30 @@ export const UI: Record<Language, UIStrings> = {
     remedials: "பரிந்துரைக்கப்பட்ட நடவடிக்கைகள்",
     starterHeader: "தொடங்க இவற்றில் ஒன்றை முயற்சிக்கவும்",
     share: "பகிர்",
-    trustChip: "நேரடி · ஷிக்ஷாக்ரஹா டாஷ்போர்டு",
+    trustChip: "நேரடி · MITRA",
   },
   kn: {
-    appTagline: "ಶಿಕ್ಷಾಗ್ರಹ ಒಳನೋಟಗಳು",
+    appTagline: "MITRA ಸಂಭಾಷಣಾ ಒಳನೋಟಗಳು",
     newConversation: "ಹೊಸ ಸಂಭಾಷಣೆ",
     role: "ಪಾತ್ರ",
     saved: "ಉಳಿಸಿದ ಪ್ರಶ್ನೆಗಳು",
     recent: "ಇತ್ತೀಚಿನ ಸಂಭಾಷಣೆಗಳು",
     language: "ಭಾಷೆ",
-    welcomeTitle: "ಶಿಕ್ಷಾಗ್ರಹ ಚಳವಳಿಯ ಬಗ್ಗೆ ಏನನ್ನಾದರೂ ಕೇಳಿ",
-    welcomeSubtitle: "ಶಿಕ್ಷಾಗ್ರಹ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ನಿಂದ ನೇರ ಸಂಖ್ಯೆಗಳು — ಸೂಕ್ಷ್ಮ ಸುಧಾರಣೆಗಳು, ನಾಯಕರು, ಶಾಲೆಗಳು ಮತ್ತು ಸಮುದಾಯ ಪ್ರಭಾವ. ನಿಮ್ಮ ಭಾಷೆಯಲ್ಲಿ ಕೇಳಿ, ನಿಮ್ಮ ಭಾಷೆಯಲ್ಲಿ ಉತ್ತರ ಪಡೆಯಿರಿ.",
-    composerPlaceholder: "ಮೆಟ್ರಿಕ್, ಟ್ರೆಂಡ್ ಅಥವಾ ಮುಂದಿನ ಹಂತದ ಬಗ್ಗೆ ಕೇಳಿ…",
+    welcomeTitle: "MITRA ಬಗ್ಗೆ ಏನನ್ನಾದರೂ ಕೇಳಿ",
+    welcomeSubtitle: "MITRA-ನಿಂದ ನೇರ ಡೇಟಾ — ಚೌಪಾಲ್ (ಬಿಹಾರ), ಚಾವಡಿ (ಕರ್ನಾಟಕ), ಸೂಕ್ಷ್ಮ ಸುಧಾರಣಾ ಕಥೆಗಳು. ನಿಮ್ಮ ಭಾಷೆಯಲ್ಲಿ ಕೇಳಿ, ನಿಮ್ಮ ಭಾಷೆಯಲ್ಲಿ ಉತ್ತರ ಪಡೆಯಿರಿ.",
+    composerPlaceholder: "ತೊಡಗಿಸಿಕೊಳ್ಳುವಿಕೆ, ಇಳಿಕೆ, ಮುಖ್ಯ ವಿಷಯಗಳು ಅಥವಾ ಮುಂದಿನ ಹಂತದ ಬಗ್ಗೆ ಕೇಳಿ…",
     ask: "ಕೇಳಿ",
-    thinking: "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ನಿಂದ ಡೇಟಾ ಪಡೆಯಲಾಗುತ್ತಿದೆ…",
+    thinking: "MITRA ಸಂಭಾಷಣೆಗಳಿಂದ ಡೇಟಾ ಪಡೆಯಲಾಗುತ್ತಿದೆ…",
     contextHeader: "ಸಕ್ರಿಯ ಸಂದರ್ಭ",
     state: "ರಾಜ್ಯ",
-    collective: "ಸಾಮೂಹಿಕ",
+    program: "ಕಾರ್ಯಕ್ರಮ",
     dateRange: "ಕಾಲಾವಧಿ",
     sourceTrace: "ಮೂಲ ವಿವರ",
-    table: "ಕೋಷ್ಟಕ",
+    table: "ಡೇಟಾಸೆಟ್",
     filters: "ಅನ್ವಯಿಸಿದ ಫಿಲ್ಟರ್‌ಗಳು",
     timeRange: "ಸಮಯ ಶ್ರೇಣಿ",
     rows: "ಸ್ಕ್ಯಾನ್ ಮಾಡಿದ ಸಾಲುಗಳು",
-    groundedNote: "ಸತ್ಯ ಆಧಾರಿತ ಉತ್ತರಗಳು. ಸಂಖ್ಯೆಗಳು ಶಿಕ್ಷಾಗ್ರಹ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ನಿಂದ. ವ್ಯಾಖ್ಯಾನ ಮತ್ತು ಸಲಹೆಗಳು AI ರಚಿತ.",
+    groundedNote: "ಸತ್ಯ ಆಧಾರಿತ ಉತ್ತರಗಳು. ಸಂಖ್ಯೆಗಳು MITRA ಸಂಭಾಷಣಾ ದಾಖಲೆಗಳಿಂದ. ವ್ಯಾಖ್ಯಾನ ಮತ್ತು ಸಲಹೆಗಳು AI ರಚಿತ.",
     followupHeader: "ಮತ್ತೊಂದು ಪ್ರಶ್ನೆ ಕೇಳಿ",
     fact: "ಸತ್ಯ",
     insight: "ಒಳನೋಟ",
@@ -199,573 +256,477 @@ export const UI: Record<Language, UIStrings> = {
     remedials: "ಶಿಫಾರಸು ಮಾಡಿದ ಕ್ರಮಗಳು",
     starterHeader: "ಪ್ರಾರಂಭಿಸಲು ಇವುಗಳಲ್ಲಿ ಒಂದನ್ನು ಪ್ರಯತ್ನಿಸಿ",
     share: "ಹಂಚಿಕೊಳ್ಳಿ",
-    trustChip: "ನೇರ · ಶಿಕ್ಷಾಗ್ರಹ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್",
+    trustChip: "ನೇರ · MITRA",
   },
 };
 
-// ---------------- Suggested starter questions (valuable, per language) ----------------
+// ---------------- Suggested starter questions ----------------
 export const SUGGESTED_PROMPTS: Record<Language, string[]> = {
   en: [
-    "How many micro-improvements have been initiated across India so far?",
-    "Which states have the most schools driving improvements?",
-    "What is the trend in leaders engaged over the last 6 months?",
-    "How can we grow community-led improvements faster?",
+    "How many parents engaged with MITRA so far?",
+    "Which stages have the most drop-off?",
+    "Compare Bihar Chaupal vs Karnataka Chavadi engagement",
+    "What are the top discussion topics in PTM conversations?",
+    "Show daily conversation trend",
+    "How can we improve conversation completion rate?",
   ],
   hi: [
-    "अब तक भारत भर में कितने सूक्ष्म सुधार शुरू हुए हैं?",
-    "किस राज्य में सबसे अधिक स्कूल सुधार में शामिल हैं?",
-    "पिछले 6 महीनों में जुड़े नेताओं का रुझान क्या है?",
-    "समुदाय-नेतृत्व वाले सुधारों को तेज़ी से कैसे बढ़ाया जाए?",
+    "अब तक कितने अभिभावकों ने MITRA से बातचीत की है?",
+    "किन चरणों में सबसे अधिक छूटना हो रहा है?",
+    "बिहार चौपाल बनाम कर्नाटक चावड़ी की भागीदारी की तुलना करें",
+    "PTM बातचीत में मुख्य चर्चा विषय क्या हैं?",
+    "दैनिक बातचीत प्रवृत्ति दिखाएँ",
+    "बातचीत पूर्णता दर कैसे बेहतर करें?",
   ],
   ta: [
-    "இந்தியா முழுவதும் இதுவரை எத்தனை நுண் முன்னேற்றங்கள் தொடங்கப்பட்டுள்ளன?",
-    "எந்த மாநிலங்களில் மிக அதிகமான பள்ளிகள் முன்னேற்றத்தில் ஈடுபட்டுள்ளன?",
-    "கடந்த 6 மாதங்களில் ஈடுபட்ட தலைவர்களின் போக்கு என்ன?",
-    "சமூகம் வழிநடத்தும் முன்னேற்றங்களை விரைவாக எவ்வாறு வளர்ப்பது?",
+    "இதுவரை எத்தனை பெற்றோர் MITRA-வுடன் ஈடுபட்டுள்ளனர்?",
+    "எந்த நிலைகளில் அதிகபட்ச விலகல் உள்ளது?",
+    "பீகார் சௌபால் vs கர்நாடகா சாவடி ஈடுபாட்டை ஒப்பிடு",
+    "PTM உரையாடல்களில் முன்னணி விவாத தலைப்புகள் என்ன?",
+    "தினசரி உரையாடல் போக்கைக் காட்டு",
+    "உரையாடல் முடிவு விகிதத்தை எப்படி மேம்படுத்துவது?",
   ],
   kn: [
-    "ಇಲ್ಲಿಯವರೆಗೆ ಭಾರತದಾದ್ಯಂತ ಎಷ್ಟು ಸೂಕ್ಷ್ಮ ಸುಧಾರಣೆಗಳನ್ನು ಪ್ರಾರಂಭಿಸಲಾಗಿದೆ?",
-    "ಯಾವ ರಾಜ್ಯಗಳಲ್ಲಿ ಅತಿ ಹೆಚ್ಚು ಶಾಲೆಗಳು ಸುಧಾರಣೆಯಲ್ಲಿ ತೊಡಗಿವೆ?",
-    "ಕಳೆದ 6 ತಿಂಗಳಲ್ಲಿ ತೊಡಗಿಸಿಕೊಂಡ ನಾಯಕರ ಪ್ರವೃತ್ತಿ ಏನು?",
-    "ಸಮುದಾಯ ನೇತೃತ್ವದ ಸುಧಾರಣೆಗಳನ್ನು ವೇಗವಾಗಿ ಬೆಳೆಸುವುದು ಹೇಗೆ?",
+    "ಇಲ್ಲಿಯವರೆಗೆ ಎಷ್ಟು ಪೋಷಕರು MITRA-ನಲ್ಲಿ ತೊಡಗಿಸಿಕೊಂಡಿದ್ದಾರೆ?",
+    "ಯಾವ ಹಂತಗಳಲ್ಲಿ ಹೆಚ್ಚು ಇಳಿಕೆ ಆಗುತ್ತಿದೆ?",
+    "ಬಿಹಾರ ಚೌಪಾಲ್ vs ಕರ್ನಾಟಕ ಚಾವಡಿ ತೊಡಗಿಸಿಕೊಳ್ಳುವಿಕೆ ಹೋಲಿಸಿ",
+    "PTM ಸಂಭಾಷಣೆಗಳಲ್ಲಿ ಮುಖ್ಯ ಚರ್ಚಾ ವಿಷಯಗಳು ಯಾವುವು?",
+    "ದೈನಂದಿನ ಸಂಭಾಷಣಾ ಪ್ರವೃತ್ತಿಯನ್ನು ತೋರಿಸಿ",
+    "ಸಂಭಾಷಣೆ ಪೂರ್ಣಗೊಳಿಸುವ ದರವನ್ನು ಹೇಗೆ ಸುಧಾರಿಸುವುದು?",
   ],
 };
 
 export const RECENT_THREADS: Record<Language, { id: string; title: string; time: string }[]> = {
   en: [
-    { id: "t1", title: "Micro-improvements — state breakdown", time: "2h ago" },
-    { id: "t2", title: "Leader engagement trend", time: "Yesterday" },
-    { id: "t3", title: "Community-led improvements outlook", time: "2d ago" },
-    { id: "t4", title: "Funds mobilised vs target", time: "5d ago" },
+    { id: "t1", title: "Bihar Chaupal — weekly engagement", time: "2h ago" },
+    { id: "t2", title: "PTM attendance barriers — top themes", time: "Yesterday" },
+    { id: "t3", title: "Karnataka MI completion rate", time: "2d ago" },
+    { id: "t4", title: "Drop-off by conversation stage", time: "5d ago" },
   ],
   hi: [
-    { id: "t1", title: "सूक्ष्म सुधार — राज्यवार विवरण", time: "2 घंटे पहले" },
-    { id: "t2", title: "नेताओं की भागीदारी का रुझान", time: "कल" },
-    { id: "t3", title: "समुदाय-नेतृत्व सुधार दृष्टिकोण", time: "2 दिन पहले" },
-    { id: "t4", title: "जुटाई गई धनराशि बनाम लक्ष्य", time: "5 दिन पहले" },
+    { id: "t1", title: "बिहार चौपाल — साप्ताहिक भागीदारी", time: "2 घंटे पहले" },
+    { id: "t2", title: "PTM उपस्थिति बाधाएँ — मुख्य विषय", time: "कल" },
+    { id: "t3", title: "कर्नाटक MI पूर्णता दर", time: "2 दिन पहले" },
+    { id: "t4", title: "चरण के अनुसार छूटना", time: "5 दिन पहले" },
   ],
   ta: [
-    { id: "t1", title: "நுண் முன்னேற்றங்கள் — மாநில விவரம்", time: "2 மணி முன்" },
-    { id: "t2", title: "தலைவர் ஈடுபாட்டு போக்கு", time: "நேற்று" },
-    { id: "t3", title: "சமூக வழிநடத்தல் முன்னேற்றம்", time: "2 நாட்கள் முன்" },
-    { id: "t4", title: "திரட்டப்பட்ட நிதி vs இலக்கு", time: "5 நாட்கள் முன்" },
+    { id: "t1", title: "பீகார் சௌபால் — வாராந்திர ஈடுபாடு", time: "2 மணி முன்" },
+    { id: "t2", title: "PTM வருகை தடைகள் — முன்னணி தலைப்புகள்", time: "நேற்று" },
+    { id: "t3", title: "கர்நாடகா MI முடிவு விகிதம்", time: "2 நாட்கள் முன்" },
+    { id: "t4", title: "நிலை வாரியான விலகல்", time: "5 நாட்கள் முன்" },
   ],
   kn: [
-    { id: "t1", title: "ಸೂಕ್ಷ್ಮ ಸುಧಾರಣೆಗಳು — ರಾಜ್ಯವಾರು", time: "2 ಗಂಟೆ ಹಿಂದೆ" },
-    { id: "t2", title: "ನಾಯಕರ ತೊಡಗಿಸಿಕೊಳ್ಳುವಿಕೆ ಪ್ರವೃತ್ತಿ", time: "ನಿನ್ನೆ" },
-    { id: "t3", title: "ಸಮುದಾಯ ನೇತೃತ್ವದ ಸುಧಾರಣೆಗಳು", time: "2 ದಿನ ಹಿಂದೆ" },
-    { id: "t4", title: "ಸಂಗ್ರಹಿಸಿದ ನಿಧಿ vs ಗುರಿ", time: "5 ದಿನ ಹಿಂದೆ" },
+    { id: "t1", title: "ಬಿಹಾರ ಚೌಪಾಲ್ — ಸಾಪ್ತಾಹಿಕ ತೊಡಗಿಸಿಕೊಳ್ಳುವಿಕೆ", time: "2 ಗಂಟೆ ಹಿಂದೆ" },
+    { id: "t2", title: "PTM ಹಾಜರಾತಿ ಅಡೆತಡೆಗಳು — ಮುಖ್ಯ ವಿಷಯಗಳು", time: "ನಿನ್ನೆ" },
+    { id: "t3", title: "ಕರ್ನಾಟಕ MI ಪೂರ್ಣಗೊಳಿಸುವ ದರ", time: "2 ದಿನ ಹಿಂದೆ" },
+    { id: "t4", title: "ಹಂತಗಳ ಪ್ರಕಾರ ಇಳಿಕೆ", time: "5 ದಿನ ಹಿಂದೆ" },
   ],
 };
 
-// ---------------- Localised answer templates (Shikshagraha live numbers) ----------------
-type Template = Omit<Answer, "id" | "question" | "language" | "createdAt">;
+// ---------------- Metrics access ----------------
+type Metrics = {
+  total_msgs: number;
+  total_sessions: number;
+  by_day: [string, number][];
+  by_day_sess: [string, number][];
+  by_stage: [string, number][];
+  by_status: [string, number][];
+  by_program: [string, number][];
+  by_program_sess: [string, number][];
+  by_state: [string, number][];
+};
+const METRICS = metricsJson as unknown as Record<string, Metrics>;
 
-const T: Record<Language, Record<"micro" | "schools" | "leaders" | "community" | "funds" | "default", Template>> = {
-  en: {
-    micro: {
-      source: { table: "fact_micro_improvements", filters: ["country = India", "status = initiated"], timeRange: "All time · live", rows: 1495470 },
-      blocks: [
-        { type: "kpi", label: "Micro-improvements initiated", value: "14,95,470", delta: "+8.4% MoM", deltaDir: "up" },
-        { type: "trend", label: "Monthly micro-improvements", period: "Last 12 months", points: [62, 68, 74, 81, 88, 94, 102, 110, 118, 124, 131, 138] },
-        { type: "interpretation", text: "Micro-improvements continue to compound — over 14.9 lakh have now been initiated across 16 states and 47 districts. Growth has stayed consistently above 8% month-on-month, driven primarily by teacher-led classroom changes." },
-        { type: "breakdown", label: "Top contributing states", rows: [
-          { name: "Uttar Pradesh", value: "3,84,210", delta: "+11.2%", tone: "pos" },
-          { name: "Madhya Pradesh", value: "2,71,540", delta: "+9.6%", tone: "pos" },
-          { name: "Karnataka", value: "1,98,120", delta: "+8.4%", tone: "pos" },
-          { name: "Tamil Nadu", value: "1,42,360", delta: "+7.1%", tone: "pos" },
-        ]},
-        { type: "followups", items: [
-          "Show schools driving improvements in Uttar Pradesh",
-          "How many leaders contributed to these improvements?",
-          "What kinds of micro-improvements are most common?",
-        ]},
-      ],
-    },
-    schools: {
-      source: { table: "fact_schools_engaged", filters: ["status = driving improvements"], timeRange: "All time · live", rows: 211167 },
-      blocks: [
-        { type: "kpi", label: "Schools driving improvements", value: "2,11,167", delta: "+6.7% MoM", deltaDir: "up" },
-        { type: "interpretation", text: "Over 2.11 lakh public schools are now actively driving improvements — about 21% of India's 1 million public school target. Growth is led by states with strong CSO–government partnerships." },
-        { type: "breakdown", label: "Top states by participating schools", rows: [
-          { name: "Uttar Pradesh", value: "48,920", delta: "+9.1%", tone: "pos" },
-          { name: "Karnataka", value: "31,440", delta: "+7.8%", tone: "pos" },
-          { name: "Madhya Pradesh", value: "27,810", delta: "+6.4%", tone: "pos" },
-          { name: "Tamil Nadu", value: "22,150", delta: "+5.9%", tone: "pos" },
-          { name: "Maharashtra", value: "19,640", delta: "+5.2%", tone: "pos" },
-        ]},
-        { type: "remedials", items: [
-          "Replicate the UP Systemic Leadership model in 3 next-tier states.",
-          "Onboard 5 new momentum partners focused on under-represented states.",
-          "Run a quarterly principals' samvaad in the 10 lowest-coverage districts.",
-        ]},
-        { type: "followups", items: [
-          "Which districts have the lowest school participation?",
-          "Compare schools engaged vs leaders driving",
-          "What is the path to 5 lakh schools?",
-        ]},
-      ],
-    },
-    leaders: {
-      source: { table: "fact_leaders_engaged", filters: ["status = driving improvements"], timeRange: "Last 6 months · live", rows: 390664 },
-      blocks: [
-        { type: "kpi", label: "Leaders driving improvements", value: "3,90,664", delta: "+12.1% over 6m", deltaDir: "up" },
-        { type: "trend", label: "Monthly leader engagement", period: "Last 6 months", points: [285, 302, 320, 341, 366, 390] },
-        { type: "interpretation", text: "Leader engagement crossed 3.9 lakh — driven by women's collectives and youth leadership cohorts. Growth has accelerated in the last 2 months as new district cohorts came online." },
-        { type: "drivers", items: [
-          { label: "Women Leadership Collective onboarding", impact: "+1.6 lakh", tone: "pos" },
-          { label: "Youth Leadership cohorts (12 districts)", impact: "+72,000", tone: "pos" },
-          { label: "Principal samvaads (UP, MP)", impact: "+48,000", tone: "pos" },
-          { label: "Drop-off in 2 districts post-cohort", impact: "−9,200", tone: "neg" },
-        ]},
-        { type: "followups", items: [
-          "Which collective drives most leader engagement?",
-          "Show drop-off by district",
-          "How do leaders convert into school improvements?",
-        ]},
-      ],
-    },
-    community: {
-      source: { table: "fact_community_improvements", filters: ["led_by = community"], timeRange: "All time · live", rows: 35735 },
-      blocks: [
-        { type: "kpi", label: "Community-led improvements", value: "35,735", delta: "+14.2% MoM", deltaDir: "up" },
-        { type: "interpretation", text: "Community-led improvements are the fastest-growing segment but still only ~2.4% of total micro-improvements. Scaling community ownership is the highest-leverage opportunity for the next quarter." },
-        { type: "remedials", items: [
-          "Launch a Shiksha Samvaad in every district with <50 community improvements.",
-          "Equip 500 women leaders with the parent-engagement playbook.",
-          "Pair each new community cohort with a momentum partner for 90 days.",
-          "Publish monthly community impact stories on Mohini to amplify role models.",
-        ]},
-        { type: "followups", items: [
-          "Which districts have zero community improvements?",
-          "What drives a community improvement to succeed?",
-          "Estimate impact if we double community cohorts",
-        ]},
-      ],
-    },
-    funds: {
-      source: { table: "fact_funds_mobilised", filters: ["currency = INR"], timeRange: "FY · live", rows: 27 },
-      blocks: [
-        { type: "kpi", label: "Funds mobilised", value: "₹27 crore", delta: "+18% YoY", deltaDir: "up" },
-        { type: "interpretation", text: "₹27 crore has been mobilised across 44 momentum partners and 15 strategic partners. Funding mix is healthy but concentrated — top 5 funders account for ~62% of inflows." },
-        { type: "followups", items: [
-          "Show funds by partner type",
-          "Which partners are at risk of churn?",
-          "What's the cost per micro-improvement?",
-        ]},
-      ],
-    },
-    default: {
-      source: { table: "fact_movement_overview", filters: ["scope = India"], timeRange: "All time · live", rows: 1495470 },
-      blocks: [
-        { type: "kpi", label: "Movement footprint", value: "16 states · 47 districts", delta: "Active", deltaDir: "flat" },
-        { type: "breakdown", label: "Live numbers from the dashboard", rows: [
-          { name: "Micro-improvements initiated", value: "14,95,470" },
-          { name: "Leaders driving improvements", value: "3,90,664" },
-          { name: "Schools driving improvements", value: "2,11,167" },
-          { name: "Community-led improvements", value: "35,735" },
-          { name: "Momentum partners", value: "44" },
-          { name: "Strategic partners", value: "15" },
-          { name: "Funds mobilised (INR)", value: "₹27 crore" },
-        ]},
-        { type: "interpretation", text: "Shikshagraha is active across 16 states and 47 districts. Schools driving improvements have crossed 2.11 lakh — about 21% of the 1 million school vision. The next inflection point is community ownership." },
-        { type: "followups", items: [
-          "Show the trend of micro-improvements",
-          "Which states have most schools engaged?",
-          "How can we grow community-led improvements?",
-        ]},
-      ],
-    },
-  },
-  hi: {
-    micro: {
-      source: { table: "fact_micro_improvements", filters: ["देश = भारत", "स्थिति = प्रारंभ"], timeRange: "अब तक · लाइव", rows: 1495470 },
-      blocks: [
-        { type: "kpi", label: "शुरू किए गए सूक्ष्म सुधार", value: "14,95,470", delta: "+8.4% मासिक", deltaDir: "up" },
-        { type: "trend", label: "मासिक सूक्ष्म सुधार", period: "पिछले 12 महीने", points: [62, 68, 74, 81, 88, 94, 102, 110, 118, 124, 131, 138] },
-        { type: "interpretation", text: "सूक्ष्म सुधार लगातार बढ़ रहे हैं — 16 राज्यों और 47 ज़िलों में अब तक 14.9 लाख से अधिक शुरू हो चुके हैं। मासिक वृद्धि लगातार 8% से ऊपर बनी हुई है, जिसका मुख्य कारण शिक्षक-नेतृत्व वाले कक्षा परिवर्तन हैं।" },
-        { type: "breakdown", label: "शीर्ष योगदान देने वाले राज्य", rows: [
-          { name: "उत्तर प्रदेश", value: "3,84,210", delta: "+11.2%", tone: "pos" },
-          { name: "मध्य प्रदेश", value: "2,71,540", delta: "+9.6%", tone: "pos" },
-          { name: "कर्नाटक", value: "1,98,120", delta: "+8.4%", tone: "pos" },
-          { name: "तमिलनाडु", value: "1,42,360", delta: "+7.1%", tone: "pos" },
-        ]},
-        { type: "followups", items: [
-          "उत्तर प्रदेश में सुधार करने वाले स्कूल दिखाएँ",
-          "इन सुधारों में कितने नेताओं ने योगदान दिया?",
-          "किस प्रकार के सूक्ष्म सुधार सबसे आम हैं?",
-        ]},
-      ],
-    },
-    schools: {
-      source: { table: "fact_schools_engaged", filters: ["स्थिति = सुधार में सक्रिय"], timeRange: "अब तक · लाइव", rows: 211167 },
-      blocks: [
-        { type: "kpi", label: "सुधार करने वाले स्कूल", value: "2,11,167", delta: "+6.7% मासिक", deltaDir: "up" },
-        { type: "interpretation", text: "2.11 लाख से अधिक सरकारी स्कूल अब सक्रिय रूप से सुधार कर रहे हैं — यह भारत के 10 लाख स्कूल लक्ष्य का लगभग 21% है। मजबूत CSO–सरकार साझेदारी वाले राज्य अग्रणी हैं।" },
-        { type: "breakdown", label: "शीर्ष राज्य (भागीदार स्कूल)", rows: [
-          { name: "उत्तर प्रदेश", value: "48,920", delta: "+9.1%", tone: "pos" },
-          { name: "कर्नाटक", value: "31,440", delta: "+7.8%", tone: "pos" },
-          { name: "मध्य प्रदेश", value: "27,810", delta: "+6.4%", tone: "pos" },
-          { name: "तमिलनाडु", value: "22,150", delta: "+5.9%", tone: "pos" },
-          { name: "महाराष्ट्र", value: "19,640", delta: "+5.2%", tone: "pos" },
-        ]},
-        { type: "remedials", items: [
-          "UP के सिस्टमिक लीडरशिप मॉडल को अगले 3 राज्यों में दोहराएँ।",
-          "कम भागीदारी वाले राज्यों के लिए 5 नए मोमेंटम पार्टनर जोड़ें।",
-          "10 सबसे कम कवरेज वाले ज़िलों में त्रैमासिक प्रधानाचार्य संवाद आयोजित करें।",
-        ]},
-        { type: "followups", items: [
-          "किन ज़िलों में स्कूल भागीदारी सबसे कम है?",
-          "स्कूल बनाम नेताओं की तुलना दिखाएँ",
-          "5 लाख स्कूलों तक पहुँचने का रास्ता क्या है?",
-        ]},
-      ],
-    },
-    leaders: {
-      source: { table: "fact_leaders_engaged", filters: ["स्थिति = सक्रिय"], timeRange: "पिछले 6 माह · लाइव", rows: 390664 },
-      blocks: [
-        { type: "kpi", label: "सक्रिय नेता", value: "3,90,664", delta: "+12.1% (6 माह)", deltaDir: "up" },
-        { type: "trend", label: "मासिक नेता भागीदारी", period: "पिछले 6 माह", points: [285, 302, 320, 341, 366, 390] },
-        { type: "interpretation", text: "नेताओं की भागीदारी 3.9 लाख पार कर गई है — महिला सामूहिक और युवा नेतृत्व समूहों के नेतृत्व में। पिछले 2 महीनों में नए ज़िला समूहों के जुड़ने से वृद्धि तेज हुई है।" },
-        { type: "drivers", items: [
-          { label: "महिला नेतृत्व सामूहिक की भर्ती", impact: "+1.6 लाख", tone: "pos" },
-          { label: "युवा नेतृत्व समूह (12 ज़िले)", impact: "+72,000", tone: "pos" },
-          { label: "प्रधानाचार्य संवाद (UP, MP)", impact: "+48,000", tone: "pos" },
-          { label: "2 ज़िलों में समूह के बाद गिरावट", impact: "−9,200", tone: "neg" },
-        ]},
-        { type: "followups", items: [
-          "कौन सा सामूहिक सबसे अधिक भागीदारी लाता है?",
-          "ज़िलावार गिरावट दिखाएँ",
-          "नेता स्कूल सुधार में कैसे बदलते हैं?",
-        ]},
-      ],
-    },
-    community: {
-      source: { table: "fact_community_improvements", filters: ["नेतृत्व = समुदाय"], timeRange: "अब तक · लाइव", rows: 35735 },
-      blocks: [
-        { type: "kpi", label: "समुदाय-नेतृत्व सुधार", value: "35,735", delta: "+14.2% मासिक", deltaDir: "up" },
-        { type: "interpretation", text: "समुदाय-नेतृत्व सुधार सबसे तेजी से बढ़ रहे हैं लेकिन कुल का केवल ~2.4% हैं। अगली तिमाही के लिए समुदाय की भागीदारी बढ़ाना सबसे बड़ा अवसर है।" },
-        { type: "remedials", items: [
-          "हर ज़िले में जहाँ <50 समुदाय सुधार हैं, शिक्षा संवाद शुरू करें।",
-          "500 महिला नेताओं को अभिभावक भागीदारी प्लेबुक से सुसज्जित करें।",
-          "हर नए समुदाय समूह को 90 दिनों के लिए मोमेंटम पार्टनर के साथ जोड़ें।",
-          "मोहिनी पर मासिक समुदाय प्रभाव कहानियाँ प्रकाशित करें।",
-        ]},
-        { type: "followups", items: [
-          "किन ज़िलों में शून्य समुदाय सुधार हैं?",
-          "एक समुदाय सुधार सफल कब होता है?",
-          "अगर हम समूह दोगुना करें तो प्रभाव क्या होगा?",
-        ]},
-      ],
-    },
-    funds: {
-      source: { table: "fact_funds_mobilised", filters: ["मुद्रा = INR"], timeRange: "वित्तीय वर्ष · लाइव", rows: 27 },
-      blocks: [
-        { type: "kpi", label: "जुटाई गई धनराशि", value: "₹27 करोड़", delta: "+18% सालाना", deltaDir: "up" },
-        { type: "interpretation", text: "44 मोमेंटम पार्टनर और 15 रणनीतिक पार्टनर के माध्यम से ₹27 करोड़ जुटाए गए हैं। फंडिंग मिश्रण स्वस्थ है लेकिन केंद्रित — शीर्ष 5 फंडर ~62% योगदान देते हैं।" },
-        { type: "followups", items: [
-          "पार्टनर प्रकार के अनुसार धनराशि दिखाएँ",
-          "किन पार्टनर के छूटने का जोखिम है?",
-          "प्रति सूक्ष्म सुधार लागत क्या है?",
-        ]},
-      ],
-    },
-    default: {
-      source: { table: "fact_movement_overview", filters: ["क्षेत्र = भारत"], timeRange: "अब तक · लाइव", rows: 1495470 },
-      blocks: [
-        { type: "kpi", label: "आंदोलन का विस्तार", value: "16 राज्य · 47 ज़िले", delta: "सक्रिय", deltaDir: "flat" },
-        { type: "breakdown", label: "डैशबोर्ड के लाइव आंकड़े", rows: [
-          { name: "शुरू किए गए सूक्ष्म सुधार", value: "14,95,470" },
-          { name: "सक्रिय नेता", value: "3,90,664" },
-          { name: "सुधार करने वाले स्कूल", value: "2,11,167" },
-          { name: "समुदाय-नेतृत्व सुधार", value: "35,735" },
-          { name: "मोमेंटम पार्टनर", value: "44" },
-          { name: "रणनीतिक पार्टनर", value: "15" },
-          { name: "जुटाई गई धनराशि", value: "₹27 करोड़" },
-        ]},
-        { type: "interpretation", text: "शिक्षाग्रह 16 राज्यों और 47 ज़िलों में सक्रिय है। 2.11 लाख से अधिक स्कूल सुधार कर रहे हैं — 10 लाख स्कूल के लक्ष्य का लगभग 21%। अगला बड़ा कदम समुदाय की भागीदारी है।" },
-        { type: "followups", items: [
-          "सूक्ष्म सुधारों का रुझान दिखाएँ",
-          "किन राज्यों में सबसे अधिक स्कूल जुड़े हैं?",
-          "समुदाय-नेतृत्व सुधार कैसे बढ़ाएँ?",
-        ]},
-      ],
-    },
-  },
-  ta: {
-    micro: {
-      source: { table: "fact_micro_improvements", filters: ["நாடு = இந்தியா", "நிலை = தொடங்கப்பட்டது"], timeRange: "இதுவரை · நேரடி", rows: 1495470 },
-      blocks: [
-        { type: "kpi", label: "தொடங்கப்பட்ட நுண் முன்னேற்றங்கள்", value: "14,95,470", delta: "+8.4% மாதாந்திரம்", deltaDir: "up" },
-        { type: "trend", label: "மாதாந்திர நுண் முன்னேற்றங்கள்", period: "கடந்த 12 மாதங்கள்", points: [62, 68, 74, 81, 88, 94, 102, 110, 118, 124, 131, 138] },
-        { type: "interpretation", text: "நுண் முன்னேற்றங்கள் தொடர்ந்து வளர்ந்து வருகின்றன — 16 மாநிலங்கள் மற்றும் 47 மாவட்டங்களில் இதுவரை 14.9 லட்சத்திற்கும் மேற்பட்டவை தொடங்கப்பட்டுள்ளன. மாதாந்திர வளர்ச்சி தொடர்ந்து 8%-க்கு மேல் உள்ளது, முக்கியமாக ஆசிரியர் வழிநடத்தும் வகுப்பறை மாற்றங்களால் இயக்கப்படுகிறது." },
-        { type: "breakdown", label: "முன்னணி பங்களிப்பு மாநிலங்கள்", rows: [
-          { name: "உத்தரப் பிரதேசம்", value: "3,84,210", delta: "+11.2%", tone: "pos" },
-          { name: "மத்தியப் பிரதேசம்", value: "2,71,540", delta: "+9.6%", tone: "pos" },
-          { name: "கர்நாடகா", value: "1,98,120", delta: "+8.4%", tone: "pos" },
-          { name: "தமிழ்நாடு", value: "1,42,360", delta: "+7.1%", tone: "pos" },
-        ]},
-        { type: "followups", items: [
-          "உத்தரப் பிரதேசத்தில் முன்னேற்றும் பள்ளிகளைக் காட்டு",
-          "இவற்றில் எத்தனை தலைவர்கள் பங்களித்தனர்?",
-          "எந்த வகை நுண் முன்னேற்றங்கள் பொதுவானவை?",
-        ]},
-      ],
-    },
-    schools: {
-      source: { table: "fact_schools_engaged", filters: ["நிலை = முன்னேற்றத்தில்"], timeRange: "இதுவரை · நேரடி", rows: 211167 },
-      blocks: [
-        { type: "kpi", label: "முன்னேறும் பள்ளிகள்", value: "2,11,167", delta: "+6.7% மாதாந்திரம்", deltaDir: "up" },
-        { type: "interpretation", text: "2.11 லட்சத்திற்கும் மேற்பட்ட அரசுப் பள்ளிகள் தற்போது தீவிரமாக முன்னேறி வருகின்றன — இது இந்தியாவின் 10 லட்சம் பள்ளி இலக்கில் சுமார் 21% ஆகும். வலுவான CSO–அரசு கூட்டாண்மை கொண்ட மாநிலங்கள் முன்னணியில் உள்ளன." },
-        { type: "breakdown", label: "பங்கேற்கும் பள்ளிகள் வாரியான முன்னணி மாநிலங்கள்", rows: [
-          { name: "உத்தரப் பிரதேசம்", value: "48,920", delta: "+9.1%", tone: "pos" },
-          { name: "கர்நாடகா", value: "31,440", delta: "+7.8%", tone: "pos" },
-          { name: "மத்தியப் பிரதேசம்", value: "27,810", delta: "+6.4%", tone: "pos" },
-          { name: "தமிழ்நாடு", value: "22,150", delta: "+5.9%", tone: "pos" },
-          { name: "மகாராஷ்டிரா", value: "19,640", delta: "+5.2%", tone: "pos" },
-        ]},
-        { type: "remedials", items: [
-          "உத்தரப் பிரதேச அமைப்பு தலைமை மாதிரியை அடுத்த 3 மாநிலங்களில் பின்பற்றுங்கள்.",
-          "குறைவான பிரதிநிதித்துவம் கொண்ட மாநிலங்களுக்கு 5 புதிய மொமெண்டம் கூட்டாளர்களைச் சேர்க்கவும்.",
-          "10 குறைந்த பாதுகாப்பு மாவட்டங்களில் காலாண்டு முதல்வர் சம்வாதத்தை நடத்துங்கள்.",
-        ]},
-        { type: "followups", items: [
-          "எந்த மாவட்டங்களில் மிகக் குறைவான பள்ளிப் பங்கேற்பு உள்ளது?",
-          "ஈடுபட்ட பள்ளிகள் vs தலைவர்கள் ஒப்பிடுக",
-          "5 லட்சம் பள்ளிகளுக்கு வழி என்ன?",
-        ]},
-      ],
-    },
-    leaders: {
-      source: { table: "fact_leaders_engaged", filters: ["நிலை = செயலில்"], timeRange: "கடந்த 6 மாதங்கள் · நேரடி", rows: 390664 },
-      blocks: [
-        { type: "kpi", label: "செயல்படும் தலைவர்கள்", value: "3,90,664", delta: "+12.1% (6 மா)", deltaDir: "up" },
-        { type: "trend", label: "மாதாந்திர தலைவர் ஈடுபாடு", period: "கடந்த 6 மாதங்கள்", points: [285, 302, 320, 341, 366, 390] },
-        { type: "interpretation", text: "தலைவர் ஈடுபாடு 3.9 லட்சத்தைக் கடந்துள்ளது — பெண்கள் கூட்டுக்கள் மற்றும் இளைஞர் தலைமைக் குழுக்களால் இயக்கப்படுகிறது. கடந்த 2 மாதங்களில் புதிய மாவட்டக் குழுக்கள் இணைந்ததால் வளர்ச்சி வேகப்படுத்தப்பட்டுள்ளது." },
-        { type: "drivers", items: [
-          { label: "பெண்கள் தலைமைக் கூட்டு சேர்க்கை", impact: "+1.6 லட்சம்", tone: "pos" },
-          { label: "இளைஞர் தலைமைக் குழுக்கள் (12 மாவட்டங்கள்)", impact: "+72,000", tone: "pos" },
-          { label: "முதல்வர் சம்வாதம் (UP, MP)", impact: "+48,000", tone: "pos" },
-          { label: "2 மாவட்டங்களில் குழுவுக்குப் பின் வீழ்ச்சி", impact: "−9,200", tone: "neg" },
-        ]},
-        { type: "followups", items: [
-          "எந்தக் கூட்டு அதிக ஈடுபாடு கொடுக்கிறது?",
-          "மாவட்டவாரியான வீழ்ச்சியைக் காட்டு",
-          "தலைவர்கள் பள்ளி முன்னேற்றங்களாக எவ்வாறு மாறுகிறார்கள்?",
-        ]},
-      ],
-    },
-    community: {
-      source: { table: "fact_community_improvements", filters: ["தலைமை = சமூகம்"], timeRange: "இதுவரை · நேரடி", rows: 35735 },
-      blocks: [
-        { type: "kpi", label: "சமூகம் வழிநடத்தும் முன்னேற்றங்கள்", value: "35,735", delta: "+14.2% மாதாந்திரம்", deltaDir: "up" },
-        { type: "interpretation", text: "சமூகம் வழிநடத்தும் முன்னேற்றங்கள் வேகமாக வளர்கின்றன ஆனால் மொத்தத்தில் சுமார் 2.4% மட்டுமே. அடுத்த காலாண்டுக்கு சமூக உரிமையை அதிகரிப்பது மிகப்பெரிய வாய்ப்பு." },
-        { type: "remedials", items: [
-          "<50 சமூக முன்னேற்றங்கள் உள்ள ஒவ்வொரு மாவட்டத்திலும் ஷிக்ஷா சம்வாதத்தை தொடங்கவும்.",
-          "500 பெண் தலைவர்களுக்கு பெற்றோர் ஈடுபாட்டு வழிகாட்டியை வழங்கவும்.",
-          "ஒவ்வொரு புதிய சமூகக் குழுவையும் 90 நாட்களுக்கு மொமெண்டம் கூட்டாளியுடன் இணைக்கவும்.",
-          "மோகினியில் மாதாந்திர சமூக தாக்கக் கதைகளை வெளியிடுங்கள்.",
-        ]},
-        { type: "followups", items: [
-          "எந்த மாவட்டங்களில் பூஜ்ய சமூக முன்னேற்றம் உள்ளது?",
-          "ஒரு சமூக முன்னேற்றம் வெற்றி பெற என்ன தேவை?",
-          "குழுக்களை இரட்டிப்பாக்கினால் தாக்கம் என்ன?",
-        ]},
-      ],
-    },
-    funds: {
-      source: { table: "fact_funds_mobilised", filters: ["நாணயம் = INR"], timeRange: "நிதியாண்டு · நேரடி", rows: 27 },
-      blocks: [
-        { type: "kpi", label: "திரட்டப்பட்ட நிதி", value: "₹27 கோடி", delta: "+18% ஆண்டுக்கு", deltaDir: "up" },
-        { type: "interpretation", text: "44 மொமெண்டம் கூட்டாளர்கள் மற்றும் 15 மூலோபாய கூட்டாளர்கள் மூலம் ₹27 கோடி திரட்டப்பட்டுள்ளது. நிதியளிப்பு ஆரோக்கியமானது ஆனால் குவிக்கப்பட்டுள்ளது — முதல் 5 நிதியளிப்பாளர்கள் ~62% பங்களிக்கின்றனர்." },
-        { type: "followups", items: [
-          "கூட்டாளர் வகை வாரியாக நிதியைக் காட்டு",
-          "எந்த கூட்டாளர்கள் நீங்கும் அபாயத்தில்?",
-          "ஒரு நுண் முன்னேற்றத்திற்கான செலவு என்ன?",
-        ]},
-      ],
-    },
-    default: {
-      source: { table: "fact_movement_overview", filters: ["எல்லை = இந்தியா"], timeRange: "இதுவரை · நேரடி", rows: 1495470 },
-      blocks: [
-        { type: "kpi", label: "இயக்கத்தின் பரப்பு", value: "16 மாநிலங்கள் · 47 மாவட்டங்கள்", delta: "செயலில்", deltaDir: "flat" },
-        { type: "breakdown", label: "டாஷ்போர்டில் இருந்து நேரடி எண்கள்", rows: [
-          { name: "தொடங்கப்பட்ட நுண் முன்னேற்றங்கள்", value: "14,95,470" },
-          { name: "செயல்படும் தலைவர்கள்", value: "3,90,664" },
-          { name: "முன்னேறும் பள்ளிகள்", value: "2,11,167" },
-          { name: "சமூக வழிநடத்தும் முன்னேற்றங்கள்", value: "35,735" },
-          { name: "மொமெண்டம் கூட்டாளர்கள்", value: "44" },
-          { name: "மூலோபாய கூட்டாளர்கள்", value: "15" },
-          { name: "திரட்டப்பட்ட நிதி", value: "₹27 கோடி" },
-        ]},
-        { type: "interpretation", text: "ஷிக்ஷாக்ரஹா 16 மாநிலங்கள் மற்றும் 47 மாவட்டங்களில் செயலில் உள்ளது. 2.11 லட்சத்திற்கும் மேற்பட்ட பள்ளிகள் முன்னேறி வருகின்றன — 10 லட்சம் பள்ளி இலக்கில் சுமார் 21%. அடுத்த பெரிய கட்டம் சமூக உரிமை." },
-        { type: "followups", items: [
-          "நுண் முன்னேற்றங்களின் போக்கைக் காட்டு",
-          "எந்த மாநிலங்களில் அதிக பள்ளிகள் ஈடுபட்டுள்ளன?",
-          "சமூகம் வழிநடத்தும் முன்னேற்றங்களை எப்படி வளர்ப்பது?",
-        ]},
-      ],
-    },
-  },
-  kn: {
-    micro: {
-      source: { table: "fact_micro_improvements", filters: ["ದೇಶ = ಭಾರತ", "ಸ್ಥಿತಿ = ಆರಂಭಗೊಂಡಿದೆ"], timeRange: "ಇಲ್ಲಿಯವರೆಗೆ · ನೇರ", rows: 1495470 },
-      blocks: [
-        { type: "kpi", label: "ಆರಂಭಗೊಂಡ ಸೂಕ್ಷ್ಮ ಸುಧಾರಣೆಗಳು", value: "14,95,470", delta: "+8.4% ಮಾಸಿಕ", deltaDir: "up" },
-        { type: "trend", label: "ಮಾಸಿಕ ಸೂಕ್ಷ್ಮ ಸುಧಾರಣೆಗಳು", period: "ಕಳೆದ 12 ತಿಂಗಳುಗಳು", points: [62, 68, 74, 81, 88, 94, 102, 110, 118, 124, 131, 138] },
-        { type: "interpretation", text: "ಸೂಕ್ಷ್ಮ ಸುಧಾರಣೆಗಳು ನಿರಂತರವಾಗಿ ಬೆಳೆಯುತ್ತಿವೆ — 16 ರಾಜ್ಯಗಳು ಮತ್ತು 47 ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಇಲ್ಲಿಯವರೆಗೆ 14.9 ಲಕ್ಷಕ್ಕೂ ಹೆಚ್ಚು ಆರಂಭಗೊಂಡಿವೆ. ಮಾಸಿಕ ಬೆಳವಣಿಗೆ ನಿರಂತರವಾಗಿ 8% ಮೇಲಿದೆ, ಶಿಕ್ಷಕ ನೇತೃತ್ವದ ತರಗತಿ ಬದಲಾವಣೆಗಳಿಂದ ಚಾಲಿತವಾಗಿದೆ." },
-        { type: "breakdown", label: "ಪ್ರಮುಖ ಕೊಡುಗೆದಾರ ರಾಜ್ಯಗಳು", rows: [
-          { name: "ಉತ್ತರ ಪ್ರದೇಶ", value: "3,84,210", delta: "+11.2%", tone: "pos" },
-          { name: "ಮಧ್ಯ ಪ್ರದೇಶ", value: "2,71,540", delta: "+9.6%", tone: "pos" },
-          { name: "ಕರ್ನಾಟಕ", value: "1,98,120", delta: "+8.4%", tone: "pos" },
-          { name: "ತಮಿಳುನಾಡು", value: "1,42,360", delta: "+7.1%", tone: "pos" },
-        ]},
-        { type: "followups", items: [
-          "ಉತ್ತರ ಪ್ರದೇಶದಲ್ಲಿ ಸುಧಾರಿಸುವ ಶಾಲೆಗಳನ್ನು ತೋರಿಸಿ",
-          "ಎಷ್ಟು ನಾಯಕರು ಕೊಡುಗೆ ನೀಡಿದ್ದಾರೆ?",
-          "ಯಾವ ಬಗೆಯ ಸೂಕ್ಷ್ಮ ಸುಧಾರಣೆಗಳು ಸಾಮಾನ್ಯ?",
-        ]},
-      ],
-    },
-    schools: {
-      source: { table: "fact_schools_engaged", filters: ["ಸ್ಥಿತಿ = ಸುಧಾರಣೆಯಲ್ಲಿ"], timeRange: "ಇಲ್ಲಿಯವರೆಗೆ · ನೇರ", rows: 211167 },
-      blocks: [
-        { type: "kpi", label: "ಸುಧಾರಿಸುವ ಶಾಲೆಗಳು", value: "2,11,167", delta: "+6.7% ಮಾಸಿಕ", deltaDir: "up" },
-        { type: "interpretation", text: "2.11 ಲಕ್ಷಕ್ಕೂ ಹೆಚ್ಚು ಸರ್ಕಾರಿ ಶಾಲೆಗಳು ಈಗ ಸಕ್ರಿಯವಾಗಿ ಸುಧಾರಿಸುತ್ತಿವೆ — ಭಾರತದ 10 ಲಕ್ಷ ಶಾಲೆ ಗುರಿಯ ಸುಮಾರು 21%. ಬಲವಾದ CSO–ಸರ್ಕಾರ ಪಾಲುದಾರಿಕೆ ಹೊಂದಿರುವ ರಾಜ್ಯಗಳು ಮುಂಚೂಣಿಯಲ್ಲಿವೆ." },
-        { type: "breakdown", label: "ಭಾಗವಹಿಸುವ ಶಾಲೆಗಳ ಪ್ರಕಾರ ಪ್ರಮುಖ ರಾಜ್ಯಗಳು", rows: [
-          { name: "ಉತ್ತರ ಪ್ರದೇಶ", value: "48,920", delta: "+9.1%", tone: "pos" },
-          { name: "ಕರ್ನಾಟಕ", value: "31,440", delta: "+7.8%", tone: "pos" },
-          { name: "ಮಧ್ಯ ಪ್ರದೇಶ", value: "27,810", delta: "+6.4%", tone: "pos" },
-          { name: "ತಮಿಳುನಾಡು", value: "22,150", delta: "+5.9%", tone: "pos" },
-          { name: "ಮಹಾರಾಷ್ಟ್ರ", value: "19,640", delta: "+5.2%", tone: "pos" },
-        ]},
-        { type: "remedials", items: [
-          "UP ನ ವ್ಯವಸ್ಥಿತ ನಾಯಕತ್ವ ಮಾದರಿಯನ್ನು ಮುಂದಿನ 3 ರಾಜ್ಯಗಳಲ್ಲಿ ಪುನರಾವರ್ತಿಸಿ.",
-          "ಕಡಿಮೆ ಪ್ರಾತಿನಿಧ್ಯ ಹೊಂದಿರುವ ರಾಜ್ಯಗಳಿಗೆ 5 ಹೊಸ ಮೊಮೆಂಟಮ್ ಪಾಲುದಾರರನ್ನು ಸೇರಿಸಿ.",
-          "10 ಕಡಿಮೆ ಒಳಗೊಳ್ಳುವಿಕೆಯ ಜಿಲ್ಲೆಗಳಲ್ಲಿ ತ್ರೈಮಾಸಿಕ ಮುಖ್ಯೋಪಾಧ್ಯಾಯರ ಸಂವಾದವನ್ನು ನಡೆಸಿ.",
-        ]},
-        { type: "followups", items: [
-          "ಯಾವ ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಶಾಲಾ ಭಾಗವಹಿಸುವಿಕೆ ಕಡಿಮೆ ಇದೆ?",
-          "ತೊಡಗಿಸಿಕೊಂಡ ಶಾಲೆಗಳು vs ನಾಯಕರು ಹೋಲಿಸಿ",
-          "5 ಲಕ್ಷ ಶಾಲೆಗಳಿಗೆ ದಾರಿ ಏನು?",
-        ]},
-      ],
-    },
-    leaders: {
-      source: { table: "fact_leaders_engaged", filters: ["ಸ್ಥಿತಿ = ಸಕ್ರಿಯ"], timeRange: "ಕಳೆದ 6 ತಿಂಗಳು · ನೇರ", rows: 390664 },
-      blocks: [
-        { type: "kpi", label: "ಸಕ್ರಿಯ ನಾಯಕರು", value: "3,90,664", delta: "+12.1% (6 ತಿಂ)", deltaDir: "up" },
-        { type: "trend", label: "ಮಾಸಿಕ ನಾಯಕರ ತೊಡಗಿಸಿಕೊಳ್ಳುವಿಕೆ", period: "ಕಳೆದ 6 ತಿಂಗಳು", points: [285, 302, 320, 341, 366, 390] },
-        { type: "interpretation", text: "ನಾಯಕರ ತೊಡಗಿಸಿಕೊಳ್ಳುವಿಕೆ 3.9 ಲಕ್ಷ ದಾಟಿದೆ — ಮಹಿಳಾ ಸಮೂಹಗಳು ಮತ್ತು ಯುವ ನಾಯಕತ್ವ ಗುಂಪುಗಳಿಂದ ಚಾಲಿತ. ಕಳೆದ 2 ತಿಂಗಳುಗಳಲ್ಲಿ ಹೊಸ ಜಿಲ್ಲಾ ಗುಂಪುಗಳು ಸೇರಿಕೊಂಡ ಕಾರಣ ಬೆಳವಣಿಗೆ ವೇಗಗೊಂಡಿದೆ." },
-        { type: "drivers", items: [
-          { label: "ಮಹಿಳಾ ನಾಯಕತ್ವ ಸಮೂಹ ಸೇರ್ಪಡೆ", impact: "+1.6 ಲಕ್ಷ", tone: "pos" },
-          { label: "ಯುವ ನಾಯಕತ್ವ ಗುಂಪುಗಳು (12 ಜಿಲ್ಲೆಗಳು)", impact: "+72,000", tone: "pos" },
-          { label: "ಮುಖ್ಯೋಪಾಧ್ಯಾಯರ ಸಂವಾದ (UP, MP)", impact: "+48,000", tone: "pos" },
-          { label: "2 ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಗುಂಪಿನ ನಂತರ ಇಳಿಕೆ", impact: "−9,200", tone: "neg" },
-        ]},
-        { type: "followups", items: [
-          "ಯಾವ ಸಮೂಹ ಹೆಚ್ಚು ತೊಡಗಿಸಿಕೊಳ್ಳುವಿಕೆ ತರುತ್ತದೆ?",
-          "ಜಿಲ್ಲಾವಾರು ಇಳಿಕೆ ತೋರಿಸಿ",
-          "ನಾಯಕರು ಶಾಲಾ ಸುಧಾರಣೆಗಳಾಗಿ ಹೇಗೆ ಪರಿವರ್ತನೆಗೊಳ್ಳುತ್ತಾರೆ?",
-        ]},
-      ],
-    },
-    community: {
-      source: { table: "fact_community_improvements", filters: ["ನೇತೃತ್ವ = ಸಮುದಾಯ"], timeRange: "ಇಲ್ಲಿಯವರೆಗೆ · ನೇರ", rows: 35735 },
-      blocks: [
-        { type: "kpi", label: "ಸಮುದಾಯ ನೇತೃತ್ವದ ಸುಧಾರಣೆಗಳು", value: "35,735", delta: "+14.2% ಮಾಸಿಕ", deltaDir: "up" },
-        { type: "interpretation", text: "ಸಮುದಾಯ ನೇತೃತ್ವದ ಸುಧಾರಣೆಗಳು ಅತಿ ವೇಗವಾಗಿ ಬೆಳೆಯುತ್ತಿವೆ ಆದರೆ ಒಟ್ಟು ಸುಧಾರಣೆಗಳಲ್ಲಿ ಕೇವಲ ~2.4%. ಮುಂದಿನ ತ್ರೈಮಾಸಿಕಕ್ಕೆ ಸಮುದಾಯ ಮಾಲೀಕತ್ವ ಬೆಳೆಸುವುದು ಅತಿದೊಡ್ಡ ಅವಕಾಶ." },
-        { type: "remedials", items: [
-          "<50 ಸಮುದಾಯ ಸುಧಾರಣೆ ಇರುವ ಪ್ರತಿ ಜಿಲ್ಲೆಯಲ್ಲಿ ಶಿಕ್ಷಾ ಸಂವಾದ ಆರಂಭಿಸಿ.",
-          "500 ಮಹಿಳಾ ನಾಯಕಿಯರಿಗೆ ಪೋಷಕ-ತೊಡಗಿಸಿಕೊಳ್ಳುವಿಕೆ ಮಾರ್ಗದರ್ಶಿ ಒದಗಿಸಿ.",
-          "ಪ್ರತಿ ಹೊಸ ಸಮುದಾಯ ಗುಂಪನ್ನು 90 ದಿನಗಳವರೆಗೆ ಮೊಮೆಂಟಮ್ ಪಾಲುದಾರರೊಂದಿಗೆ ಜೋಡಿಸಿ.",
-          "ಮೋಹಿನಿಯಲ್ಲಿ ಮಾಸಿಕ ಸಮುದಾಯ ಪ್ರಭಾವ ಕಥೆಗಳನ್ನು ಪ್ರಕಟಿಸಿ.",
-        ]},
-        { type: "followups", items: [
-          "ಯಾವ ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಶೂನ್ಯ ಸಮುದಾಯ ಸುಧಾರಣೆಗಳಿವೆ?",
-          "ಒಂದು ಸಮುದಾಯ ಸುಧಾರಣೆ ಯಶಸ್ವಿಯಾಗಲು ಏನು ಬೇಕು?",
-          "ಗುಂಪುಗಳನ್ನು ದ್ವಿಗುಣಗೊಳಿಸಿದರೆ ಪ್ರಭಾವ ಏನು?",
-        ]},
-      ],
-    },
-    funds: {
-      source: { table: "fact_funds_mobilised", filters: ["ಕರೆನ್ಸಿ = INR"], timeRange: "ಆರ್ಥಿಕ ವರ್ಷ · ನೇರ", rows: 27 },
-      blocks: [
-        { type: "kpi", label: "ಸಂಗ್ರಹಿಸಿದ ನಿಧಿ", value: "₹27 ಕೋಟಿ", delta: "+18% ವಾರ್ಷಿಕ", deltaDir: "up" },
-        { type: "interpretation", text: "44 ಮೊಮೆಂಟಮ್ ಪಾಲುದಾರರು ಮತ್ತು 15 ಕಾರ್ಯತಂತ್ರ ಪಾಲುದಾರರ ಮೂಲಕ ₹27 ಕೋಟಿ ಸಂಗ್ರಹಿಸಲಾಗಿದೆ. ಧನಸಹಾಯ ಆರೋಗ್ಯಕರವಾಗಿದೆ ಆದರೆ ಕೇಂದ್ರೀಕೃತವಾಗಿದೆ — ಮೇಲಿನ 5 ಧನಸಹಾಯಕರು ~62% ಕೊಡುಗೆ ನೀಡುತ್ತಾರೆ." },
-        { type: "followups", items: [
-          "ಪಾಲುದಾರ ವಿಧದ ಪ್ರಕಾರ ನಿಧಿ ತೋರಿಸಿ",
-          "ಯಾವ ಪಾಲುದಾರರು ತೊರೆಯುವ ಅಪಾಯದಲ್ಲಿದ್ದಾರೆ?",
-          "ಪ್ರತಿ ಸೂಕ್ಷ್ಮ ಸುಧಾರಣೆಗೆ ವೆಚ್ಚ ಎಷ್ಟು?",
-        ]},
-      ],
-    },
-    default: {
-      source: { table: "fact_movement_overview", filters: ["ವ್ಯಾಪ್ತಿ = ಭಾರತ"], timeRange: "ಇಲ್ಲಿಯವರೆಗೆ · ನೇರ", rows: 1495470 },
-      blocks: [
-        { type: "kpi", label: "ಚಳವಳಿಯ ವ್ಯಾಪ್ತಿ", value: "16 ರಾಜ್ಯಗಳು · 47 ಜಿಲ್ಲೆಗಳು", delta: "ಸಕ್ರಿಯ", deltaDir: "flat" },
-        { type: "breakdown", label: "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ನಿಂದ ನೇರ ಸಂಖ್ಯೆಗಳು", rows: [
-          { name: "ಆರಂಭಗೊಂಡ ಸೂಕ್ಷ್ಮ ಸುಧಾರಣೆಗಳು", value: "14,95,470" },
-          { name: "ಸಕ್ರಿಯ ನಾಯಕರು", value: "3,90,664" },
-          { name: "ಸುಧಾರಿಸುವ ಶಾಲೆಗಳು", value: "2,11,167" },
-          { name: "ಸಮುದಾಯ ನೇತೃತ್ವದ ಸುಧಾರಣೆಗಳು", value: "35,735" },
-          { name: "ಮೊಮೆಂಟಮ್ ಪಾಲುದಾರರು", value: "44" },
-          { name: "ಕಾರ್ಯತಂತ್ರ ಪಾಲುದಾರರು", value: "15" },
-          { name: "ಸಂಗ್ರಹಿಸಿದ ನಿಧಿ", value: "₹27 ಕೋಟಿ" },
-        ]},
-        { type: "interpretation", text: "ಶಿಕ್ಷಾಗ್ರಹ 16 ರಾಜ್ಯಗಳು ಮತ್ತು 47 ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಸಕ್ರಿಯವಾಗಿದೆ. 2.11 ಲಕ್ಷಕ್ಕೂ ಹೆಚ್ಚು ಶಾಲೆಗಳು ಸುಧಾರಿಸುತ್ತಿವೆ — 10 ಲಕ್ಷ ಶಾಲೆ ಗುರಿಯ ಸುಮಾರು 21%. ಮುಂದಿನ ದೊಡ್ಡ ಹಂತ ಸಮುದಾಯ ಮಾಲೀಕತ್ವ." },
-        { type: "followups", items: [
-          "ಸೂಕ್ಷ್ಮ ಸುಧಾರಣೆಗಳ ಪ್ರವೃತ್ತಿ ತೋರಿಸಿ",
-          "ಯಾವ ರಾಜ್ಯಗಳಲ್ಲಿ ಹೆಚ್ಚು ಶಾಲೆಗಳು ತೊಡಗಿಸಿಕೊಂಡಿವೆ?",
-          "ಸಮುದಾಯ ನೇತೃತ್ವದ ಸುಧಾರಣೆಗಳನ್ನು ಹೇಗೆ ಬೆಳೆಸುವುದು?",
-        ]},
-      ],
-    },
-  },
+function metricsFor(program: ProgramKey, state: StateKey): Metrics {
+  if (program !== "all") return METRICS[program];
+  if (state !== "all") return METRICS[state];
+  return METRICS.all;
+}
+
+const fmt = (n: number) => n.toLocaleString("en-IN");
+const pct = (n: number, d: number) => (d ? ((n / d) * 100).toFixed(1) + "%" : "—");
+
+// Pretty stage names
+const STAGE_NAMES: Record<string, Record<Language, string>> = {
+  SCHOOL_NAME: { en: "School name", hi: "स्कूल का नाम", ta: "பள்ளி பெயர்", kn: "ಶಾಲೆಯ ಹೆಸರು" },
+  PTM_DISCUSSION_TOPICS: { en: "PTM discussion topics", hi: "PTM चर्चा विषय", ta: "PTM விவாத தலைப்புகள்", kn: "PTM ಚರ್ಚಾ ವಿಷಯಗಳು" },
+  SCHOOL_EXPERIENCE_FEEDBACK: { en: "School experience feedback", hi: "स्कूल अनुभव प्रतिक्रिया", ta: "பள்ளி அனுபவ கருத்து", kn: "ಶಾಲಾ ಅನುಭವ ಪ್ರತಿಕ್ರಿಯೆ" },
+  PTM_SCHEDULING_PREFERENCE: { en: "PTM scheduling preference", hi: "PTM समय वरीयता", ta: "PTM நேர விருப்பம்", kn: "PTM ಸಮಯ ಆದ್ಯತೆ" },
+  PTM_ATTENDANCE_BARRIERS: { en: "PTM attendance barriers", hi: "PTM उपस्थिति बाधाएँ", ta: "PTM வருகை தடைகள்", kn: "PTM ಹಾಜರಾತಿ ಅಡೆತಡೆಗಳು" },
+  RESOURCE_AVAILABILITY: { en: "Resource availability", hi: "संसाधन उपलब्धता", ta: "வள கிடைப்பு", kn: "ಸಂಪನ್ಮೂಲ ಲಭ್ಯತೆ" },
+  PROGRAM_AWARENESS: { en: "Program awareness", hi: "कार्यक्रम जागरूकता", ta: "திட்ட விழிப்புணர்வு", kn: "ಕಾರ್ಯಕ್ರಮ ಜಾಗೃತಿ" },
+  SCHOOL_REPUTATION: { en: "School reputation", hi: "स्कूल प्रतिष्ठा", ta: "பள்ளி கௌரவம்", kn: "ಶಾಲಾ ಗೌರವ" },
+  INTRODUCTION: { en: "Introduction", hi: "परिचय", ta: "அறிமுகம்", kn: "ಪರಿಚಯ" },
+  APPRECIATION: { en: "Appreciation", hi: "प्रशंसा", ta: "பாராட்டு", kn: "ಮೆಚ್ಚುಗೆ" },
+};
+const stageName = (s: string, lang: Language) => STAGE_NAMES[s]?.[lang] ?? s.replace(/_/g, " ").toLowerCase();
+
+const PROGRAM_DATASETS: Record<ProgramKey, string> = {
+  all: "mitra.conversations (all programs)",
+  chaupal_bihar: "mitra.bihar_chaupal",
+  chavadi_karnataka: "mitra.karnataka_chavadi",
+  mi_bihar: "mitra.bihar_micro_improvement",
+  mi_karnataka: "mitra.karnataka_micro_improvement",
 };
 
-// Keyword routing — works across English + Indic transliteration cues
-function routeIntent(q: string): "micro" | "schools" | "leaders" | "community" | "funds" | "default" {
+// ---------------- Filter scoping for "Last N days" ----------------
+function filterDays(byDay: [string, number][], rangeKey: string): [string, number][] {
+  if (rangeKey === "all" || byDay.length === 0) return byDay;
+  const n = rangeKey === "7d" ? 7 : rangeKey === "30d" ? 30 : 0;
+  if (!n) return byDay;
+  return byDay.slice(-n);
+}
+
+// ---------------- Intent routing ----------------
+type Intent = "volume" | "completion" | "stages" | "compare_program" | "compare_state" | "trend" | "default";
+function routeIntent(q: string): Intent {
   const s = q.toLowerCase();
   const has = (...k: string[]) => k.some((w) => s.includes(w));
-  if (has("micro", "improvement", "सूक्ष्म", "सुधार", "நுண்", "முன்னேற்ற", "ಸೂಕ್ಷ್ಮ", "ಸುಧಾರಣ")) return "micro";
-  if (has("school", "स्कूल", "शाला", "பள்ளி", "ಶಾಲೆ")) return "schools";
-  if (has("leader", "engaged", "engagement", "नेता", "नेतृत्व", "தலைவர்", "ஈடுபாடு", "ನಾಯಕ")) return "leaders";
-  if (has("community", "samvaad", "समुदाय", "சமூக", "ಸಮುದಾಯ")) return "community";
-  if (has("fund", "money", "crore", "धन", "करोड़", "நிதி", "கோடி", "ನಿಧಿ", "ಕೋಟಿ")) return "funds";
+  if (has("complete", "completion", "drop", "drop-off", "dropoff", "abandon", "पूर्ण", "छूट", "முடி", "விலக", "ಪೂರ್ಣ", "ಇಳಿಕ")) return "completion";
+  if (has("stage", "topic", "theme", "discussion", "barrier", "चरण", "विषय", "बाधा", "நிலை", "தலைப்பு", "தடை", "ಹಂತ", "ವಿಷಯ", "ಅಡೆತಡೆ")) return "stages";
+  if (has("compare", "vs", "versus", "bihar vs", "chaupal", "chavadi", "तुलना", "बनाम", "ஒப்பி", "vs", "ಹೋಲಿಸಿ", "vs")) {
+    if (has("bihar", "karnataka", "बिहार", "कर्नाटक", "பீகார்", "கர்நாடகா", "ಬಿಹಾರ", "ಕರ್ನಾಟಕ", "state", "राज्य", "மாநில", "ರಾಜ್ಯ")) return "compare_state";
+    return "compare_program";
+  }
+  if (has("trend", "daily", "weekly", "over time", "रुझान", "दैनिक", "போக்கு", "தினசரி", "ಪ್ರವೃತ್ತಿ", "ದೈನಂದಿನ")) return "trend";
+  if (has("how many", "count", "total", "engaged", "parent", "session", "message", "कितने", "कुल", "अभिभावक", "एत்தனை", "மொத்த", "ஈடுபாடு", "ಎಷ್ಟು", "ಒಟ್ಟು", "ಪೋಷಕ")) return "volume";
   return "default";
 }
 
-export function generateAnswer(question: string, language: Language): Answer {
+// ---------------- Localized labels for blocks ----------------
+const L = {
+  en: {
+    totalConvos: "Total messages exchanged",
+    totalSessions: "Unique parent sessions",
+    completionRate: "Completion rate",
+    completed: "Completed sessions",
+    dailyTrend: "Daily messages",
+    last7: "Last 7 days",
+    topStages: "Top conversation stages",
+    statusBreakdown: "Conversation status breakdown",
+    programCompare: "Engagement by program",
+    stateCompare: "Engagement by state",
+    overview: "MITRA snapshot",
+    ds: "Dataset",
+    timeAll: "All time · live",
+    timeRecent: "Recent activity · live",
+  },
+  hi: {
+    totalConvos: "कुल संदेश",
+    totalSessions: "अद्वितीय अभिभावक सत्र",
+    completionRate: "पूर्णता दर",
+    completed: "पूर्ण सत्र",
+    dailyTrend: "दैनिक संदेश",
+    last7: "पिछले 7 दिन",
+    topStages: "मुख्य बातचीत चरण",
+    statusBreakdown: "बातचीत स्थिति विवरण",
+    programCompare: "कार्यक्रम के अनुसार भागीदारी",
+    stateCompare: "राज्य के अनुसार भागीदारी",
+    overview: "MITRA सारांश",
+    ds: "डेटासेट",
+    timeAll: "अब तक · लाइव",
+    timeRecent: "हाल की गतिविधि · लाइव",
+  },
+  ta: {
+    totalConvos: "மொத்த செய்திகள்",
+    totalSessions: "தனிப்பட்ட பெற்றோர் அமர்வுகள்",
+    completionRate: "முடிவு விகிதம்",
+    completed: "முடிக்கப்பட்ட அமர்வுகள்",
+    dailyTrend: "தினசரி செய்திகள்",
+    last7: "கடந்த 7 நாட்கள்",
+    topStages: "முன்னணி உரையாடல் நிலைகள்",
+    statusBreakdown: "உரையாடல் நிலை பகுப்பாய்வு",
+    programCompare: "திட்டத்தின் படி ஈடுபாடு",
+    stateCompare: "மாநிலத்தின் படி ஈடுபாடு",
+    overview: "MITRA சுருக்கம்",
+    ds: "தரவுத்தொகுப்பு",
+    timeAll: "இதுவரை · நேரடி",
+    timeRecent: "சமீபத்திய செயல்பாடு · நேரடி",
+  },
+  kn: {
+    totalConvos: "ಒಟ್ಟು ಸಂದೇಶಗಳು",
+    totalSessions: "ಅನನ್ಯ ಪೋಷಕ ಸೆಷನ್‌ಗಳು",
+    completionRate: "ಪೂರ್ಣಗೊಳಿಸುವ ದರ",
+    completed: "ಪೂರ್ಣಗೊಂಡ ಸೆಷನ್‌ಗಳು",
+    dailyTrend: "ದೈನಂದಿನ ಸಂದೇಶಗಳು",
+    last7: "ಕಳೆದ 7 ದಿನಗಳು",
+    topStages: "ಮುಖ್ಯ ಸಂಭಾಷಣಾ ಹಂತಗಳು",
+    statusBreakdown: "ಸಂಭಾಷಣಾ ಸ್ಥಿತಿ ವಿವರ",
+    programCompare: "ಕಾರ್ಯಕ್ರಮದ ಪ್ರಕಾರ ತೊಡಗಿಸಿಕೊಳ್ಳುವಿಕೆ",
+    stateCompare: "ರಾಜ್ಯದ ಪ್ರಕಾರ ತೊಡಗಿಸಿಕೊಳ್ಳುವಿಕೆ",
+    overview: "MITRA ಸಾರಾಂಶ",
+    ds: "ಡೇಟಾಸೆಟ್",
+    timeAll: "ಇಲ್ಲಿಯವರೆಗೆ · ನೇರ",
+    timeRecent: "ಇತ್ತೀಚಿನ ಚಟುವಟಿಕೆ · ನೇರ",
+  },
+};
+
+// ---------------- Answer builders ----------------
+export type AnswerContext = {
+  program: ProgramKey;
+  state: StateKey;
+  rangeKey: string;
+  rangeLabel: string;
+};
+
+function makeSource(ctx: AnswerContext, lang: Language, m: Metrics): Source {
+  const filters: string[] = [];
+  filters.push(`${UI[lang].program} = ${PROGRAM_LABELS[lang][ctx.program]}`);
+  filters.push(`${UI[lang].state} = ${STATE_LABELS[lang][ctx.state]}`);
+  return {
+    table: PROGRAM_DATASETS[ctx.program],
+    filters,
+    timeRange: ctx.rangeLabel,
+    rows: m.total_msgs,
+  };
+}
+
+function buildVolume(ctx: AnswerContext, lang: Language): AnswerBlock[] {
+  const m = metricsFor(ctx.program, ctx.state);
+  const lab = L[lang];
+  const days = filterDays(m.by_day, ctx.rangeKey);
+  const msgsInRange = days.reduce((a, [, c]) => a + c, 0);
+  const sessDays = filterDays(m.by_day_sess, ctx.rangeKey);
+  const sessInRange = sessDays.reduce((a, [, c]) => a + c, 0);
+  return [
+    { type: "kpi", label: lab.totalConvos, value: fmt(msgsInRange), delta: ctx.rangeLabel, deltaDir: "up" },
+    { type: "kpi", label: lab.totalSessions, value: fmt(sessInRange), delta: pct(sessInRange, m.total_sessions) + " of all-time", deltaDir: "flat" },
+    { type: "trend", label: lab.dailyTrend, period: ctx.rangeLabel, points: days.map(([, c]) => c) },
+    {
+      type: "interpretation",
+      text:
+        lang === "en"
+          ? `Across ${PROGRAM_LABELS.en[ctx.program]} (${STATE_LABELS.en[ctx.state]}), ${fmt(msgsInRange)} messages were exchanged in ${ctx.rangeLabel.toLowerCase()} from ${fmt(sessInRange)} parent sessions. Activity peaks during PTM cycles — the top 3 days account for the majority of volume.`
+          : lang === "hi"
+            ? `${PROGRAM_LABELS.hi[ctx.program]} (${STATE_LABELS.hi[ctx.state]}) में ${ctx.rangeLabel} के दौरान ${fmt(sessInRange)} अभिभावक सत्रों से ${fmt(msgsInRange)} संदेशों का आदान-प्रदान हुआ। PTM चक्रों के दौरान गतिविधि चरम पर रहती है।`
+            : lang === "ta"
+              ? `${PROGRAM_LABELS.ta[ctx.program]} (${STATE_LABELS.ta[ctx.state]}) இல் ${ctx.rangeLabel} காலத்தில் ${fmt(sessInRange)} பெற்றோர் அமர்வுகளில் இருந்து ${fmt(msgsInRange)} செய்திகள் பரிமாறப்பட்டன. PTM சுழற்சிகளின் போது செயல்பாடு உச்சத்தில் உள்ளது.`
+              : `${PROGRAM_LABELS.kn[ctx.program]} (${STATE_LABELS.kn[ctx.state]}) ನಲ್ಲಿ ${ctx.rangeLabel} ಅವಧಿಯಲ್ಲಿ ${fmt(sessInRange)} ಪೋಷಕ ಸೆಷನ್‌ಗಳಿಂದ ${fmt(msgsInRange)} ಸಂದೇಶಗಳು ವಿನಿಮಯವಾದವು. PTM ಚಕ್ರಗಳಲ್ಲಿ ಚಟುವಟಿಕೆ ಗರಿಷ್ಠ ಮಟ್ಟದಲ್ಲಿರುತ್ತದೆ.`,
+    },
+    { type: "followups", items: SUGGESTED_PROMPTS[lang].slice(1, 4) },
+  ];
+}
+
+function buildCompletion(ctx: AnswerContext, lang: Language): AnswerBlock[] {
+  const m = metricsFor(ctx.program, ctx.state);
+  const lab = L[lang];
+  const total = m.by_status.reduce((a, [, c]) => a + c, 0);
+  const get = (k: string) => m.by_status.find(([s]) => s === k)?.[1] ?? 0;
+  const completed = get("COMPLETED");
+  const inProgress = get("IN_PROGRESS");
+  const paused = get("PAUSED");
+  const started = get("STARTED");
+  const rate = pct(completed, total);
+  return [
+    { type: "kpi", label: lab.completionRate, value: rate, delta: `${fmt(completed)} / ${fmt(total)} sessions`, deltaDir: "flat" },
+    {
+      type: "breakdown",
+      label: lab.statusBreakdown,
+      rows: [
+        { name: lang === "en" ? "Completed" : lang === "hi" ? "पूर्ण" : lang === "ta" ? "முடிந்தது" : "ಪೂರ್ಣ", value: fmt(completed), delta: pct(completed, total), tone: "pos" },
+        { name: lang === "en" ? "In progress" : lang === "hi" ? "जारी" : lang === "ta" ? "நடைபெற்றுக்கொண்டிருக்கிறது" : "ಪ್ರಗತಿಯಲ್ಲಿದೆ", value: fmt(inProgress), delta: pct(inProgress, total) },
+        { name: lang === "en" ? "Started but not engaged" : lang === "hi" ? "शुरू, लेकिन निष्क्रिय" : lang === "ta" ? "தொடங்கி நிறுத்தப்பட்டது" : "ಪ್ರಾರಂಭವಾದ ಆದರೆ ಸಕ್ರಿಯವಲ್ಲ", value: fmt(started), delta: pct(started, total), tone: "neg" },
+        { name: lang === "en" ? "Paused" : lang === "hi" ? "रुका हुआ" : lang === "ta" ? "இடைநிறுத்தப்பட்டது" : "ವಿರಾಮಗೊಂಡಿದೆ", value: fmt(paused), delta: pct(paused, total) },
+      ],
+    },
+    {
+      type: "drivers",
+      items: [
+        { label: lang === "en" ? "Long PTM topic stage causing fatigue" : "PTM विषय चरण थकान का कारण", impact: pct(inProgress, total), tone: "neg" },
+        { label: lang === "en" ? "Drop-off after introduction" : "परिचय के बाद छूटना", impact: pct(started, total), tone: "neg" },
+        { label: lang === "en" ? "Strong appreciation stage retention" : "प्रशंसा चरण में अच्छा बने रहना", impact: "+", tone: "pos" },
+      ],
+    },
+    {
+      type: "remedials",
+      items:
+        lang === "en"
+          ? [
+              "Split PTM_DISCUSSION_TOPICS into 2 shorter prompts to reduce fatigue.",
+              "Send a one-tap WhatsApp re-engagement nudge for sessions paused >24h.",
+              "A/B test a shorter introduction stage in 2 districts.",
+              "Surface a progress bar so parents see how few steps remain.",
+            ]
+          : lang === "hi"
+            ? [
+                "थकान कम करने के लिए PTM_DISCUSSION_TOPICS को 2 छोटे प्रॉम्प्ट में बाँटें।",
+                "24 घंटे से अधिक रुके सत्रों के लिए WhatsApp री-एंगेजमेंट भेजें।",
+                "2 ज़िलों में छोटे परिचय चरण का A/B टेस्ट करें।",
+                "अभिभावकों को प्रगति बार दिखाएँ।",
+              ]
+            : lang === "ta"
+              ? [
+                  "சோர்வைக் குறைக்க PTM_DISCUSSION_TOPICS ஐ 2 குறுகிய தூண்டுதல்களாகப் பிரிக்கவும்.",
+                  "24 மணி நேரத்திற்கு மேல் இடைநிறுத்தப்பட்ட அமர்வுகளுக்கு WhatsApp தூண்டுதல் அனுப்பவும்.",
+                  "2 மாவட்டங்களில் சுருக்கமான அறிமுக நிலையை A/B சோதிக்கவும்.",
+                  "முன்னேற்ற பட்டியைக் காட்டுங்கள்.",
+                ]
+              : [
+                  "ಆಯಾಸವನ್ನು ಕಡಿಮೆ ಮಾಡಲು PTM_DISCUSSION_TOPICS ಅನ್ನು 2 ಚಿಕ್ಕ ಪ್ರಾಂಪ್ಟ್‌ಗಳಾಗಿ ವಿಭಜಿಸಿ.",
+                  "24 ಗಂಟೆಗಳ ನಂತರ ವಿರಾಮಗೊಂಡ ಸೆಷನ್‌ಗಳಿಗೆ WhatsApp ರಿ-ಎಂಗೇಜ್‌ಮೆಂಟ್ ಕಳುಹಿಸಿ.",
+                  "2 ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಚಿಕ್ಕ ಪರಿಚಯ ಹಂತದ A/B ಪರೀಕ್ಷೆ ಮಾಡಿ.",
+                  "ಪೋಷಕರಿಗೆ ಪ್ರಗತಿ ಬಾರ್ ತೋರಿಸಿ.",
+                ],
+    },
+    { type: "followups", items: SUGGESTED_PROMPTS[lang].filter((_, i) => i !== 5).slice(0, 3) },
+  ];
+}
+
+function buildStages(ctx: AnswerContext, lang: Language): AnswerBlock[] {
+  const m = metricsFor(ctx.program, ctx.state);
+  const lab = L[lang];
+  const top = m.by_stage.slice(0, 8);
+  const total = top.reduce((a, [, c]) => a + c, 0);
+  return [
+    { type: "kpi", label: lang === "en" ? "Stages tracked" : lang === "hi" ? "ट्रैक किए गए चरण" : lang === "ta" ? "கண்காணிக்கப்பட்ட நிலைகள்" : "ಟ್ರ್ಯಾಕ್ ಮಾಡಿದ ಹಂತಗಳು", value: String(m.by_stage.length), delta: fmt(total) + " msgs in top 8", deltaDir: "flat" },
+    {
+      type: "breakdown",
+      label: lab.topStages,
+      rows: top.map(([s, c]) => ({ name: stageName(s, lang), value: fmt(c), delta: pct(c, m.total_msgs), tone: "pos" as const })),
+    },
+    {
+      type: "interpretation",
+      text:
+        lang === "en"
+          ? `PTM-related stages dominate engagement: discussion topics, scheduling, and attendance barriers together drive over a third of all messages. School experience feedback is the strongest qualitative signal — it's where parents share what's working.`
+          : lang === "hi"
+            ? `PTM से जुड़े चरण भागीदारी में अग्रणी हैं: चर्चा विषय, समय निर्धारण, और उपस्थिति बाधाएँ मिलकर सभी संदेशों का एक तिहाई से अधिक हैं। स्कूल अनुभव फीडबैक सबसे मजबूत गुणात्मक संकेत है।`
+            : lang === "ta"
+              ? `PTM தொடர்பான நிலைகள் ஈடுபாட்டில் முன்னணியில் உள்ளன: விவாத தலைப்புகள், அட்டவணை, மற்றும் வருகை தடைகள் ஒன்றாக அனைத்து செய்திகளில் மூன்றில் ஒரு பகுதிக்கு மேல் உள்ளன.`
+              : `PTM ಸಂಬಂಧಿತ ಹಂತಗಳು ತೊಡಗಿಸಿಕೊಳ್ಳುವಿಕೆಯಲ್ಲಿ ಮುಂಚೂಣಿಯಲ್ಲಿವೆ: ಚರ್ಚಾ ವಿಷಯಗಳು, ವೇಳಾಪಟ್ಟಿ ಮತ್ತು ಹಾಜರಾತಿ ಅಡೆತಡೆಗಳು ಒಟ್ಟಾಗಿ ಎಲ್ಲಾ ಸಂದೇಶಗಳ ಮೂರನೇ ಒಂದು ಭಾಗಕ್ಕಿಂತ ಹೆಚ್ಚು.`,
+    },
+    { type: "followups", items: SUGGESTED_PROMPTS[lang].slice(2, 5) },
+  ];
+}
+
+function buildProgramCompare(_ctx: AnswerContext, lang: Language): AnswerBlock[] {
+  const lab = L[lang];
+  const programs: ProgramKey[] = ["chaupal_bihar", "chavadi_karnataka", "mi_bihar", "mi_karnataka"];
+  return [
+    {
+      type: "breakdown",
+      label: lab.programCompare,
+      rows: programs.map((p) => {
+        const m = METRICS[p];
+        return { name: PROGRAM_LABELS[lang][p], value: fmt(m.total_msgs), delta: fmt(m.total_sessions) + " sessions", tone: "pos" as const };
+      }),
+    },
+    {
+      type: "interpretation",
+      text:
+        lang === "en"
+          ? "All four programs are running at near-equal scale (~105K messages each, ~58K sessions). Bihar Chaupal and Karnataka Chavadi mirror each other closely; Micro-Improvement story conversations are slightly larger in both states because parents tend to share longer narratives."
+          : lang === "hi"
+            ? "चारों कार्यक्रम लगभग समान पैमाने पर चल रहे हैं (~1.05 लाख संदेश प्रत्येक, ~58 हज़ार सत्र)। बिहार चौपाल और कर्नाटक चावड़ी एक-दूसरे का प्रतिबिम्ब हैं; सूक्ष्म सुधार कहानी बातचीत थोड़ी बड़ी है।"
+            : lang === "ta"
+              ? "நான்கு திட்டங்களும் கிட்டத்தட்ட சம அளவில் இயங்குகின்றன (~1.05 லட்சம் செய்திகள் ஒவ்வொன்றும், ~58 ஆயிரம் அமர்வுகள்). நுண் முன்னேற்ற கதை உரையாடல்கள் சற்று பெரியவை."
+              : "ನಾಲ್ಕು ಕಾರ್ಯಕ್ರಮಗಳು ಬಹುತೇಕ ಸಮಾನ ಪ್ರಮಾಣದಲ್ಲಿ ನಡೆಯುತ್ತಿವೆ (~1.05 ಲಕ್ಷ ಸಂದೇಶಗಳು ಪ್ರತಿ, ~58 ಸಾವಿರ ಸೆಷನ್‌ಗಳು). ಸೂಕ್ಷ್ಮ ಸುಧಾರಣಾ ಕಥಾ ಸಂಭಾಷಣೆಗಳು ಸ್ವಲ್ಪ ದೊಡ್ಡವು.",
+    },
+    { type: "followups", items: SUGGESTED_PROMPTS[lang].slice(0, 3) },
+  ];
+}
+
+function buildStateCompare(_ctx: AnswerContext, lang: Language): AnswerBlock[] {
+  const lab = L[lang];
+  const states: StateKey[] = ["Bihar", "Karnataka"];
+  return [
+    {
+      type: "breakdown",
+      label: lab.stateCompare,
+      rows: states.map((st) => {
+        const m = METRICS[st];
+        return { name: STATE_LABELS[lang][st], value: fmt(m.total_msgs), delta: fmt(m.total_sessions) + " sessions", tone: "pos" as const };
+      }),
+    },
+    {
+      type: "interpretation",
+      text:
+        lang === "en"
+          ? "Karnataka shows marginally higher message volume than Bihar across the same conversation surfaces, suggesting parents engage in slightly longer threads — a healthy depth signal."
+          : lang === "hi"
+            ? "कर्नाटक में बिहार की तुलना में थोड़ी अधिक संदेश मात्रा है, जो दर्शाता है कि अभिभावक अधिक लंबी बातचीत में भाग लेते हैं।"
+            : lang === "ta"
+              ? "பீகாரை விட கர்நாடகாவில் சற்று அதிக செய்தி அளவு உள்ளது, பெற்றோர்கள் நீண்ட உரையாடல்களில் ஈடுபடுகிறார்கள் என்பதைக் காட்டுகிறது."
+              : "ಬಿಹಾರಕ್ಕಿಂತ ಕರ್ನಾಟಕದಲ್ಲಿ ಸ್ವಲ್ಪ ಹೆಚ್ಚಿನ ಸಂದೇಶ ಪ್ರಮಾಣವಿದೆ.",
+    },
+    { type: "followups", items: SUGGESTED_PROMPTS[lang].slice(1, 4) },
+  ];
+}
+
+function buildTrend(ctx: AnswerContext, lang: Language): AnswerBlock[] {
+  const m = metricsFor(ctx.program, ctx.state);
+  const lab = L[lang];
+  const days = filterDays(m.by_day, ctx.rangeKey);
+  return [
+    { type: "trend", label: lab.dailyTrend, period: ctx.rangeLabel, points: days.map(([, c]) => c) },
+    {
+      type: "breakdown",
+      label: lang === "en" ? "Top days by activity" : lang === "hi" ? "सबसे सक्रिय दिन" : lang === "ta" ? "முன்னணி நாட்கள்" : "ಮುಖ್ಯ ದಿನಗಳು",
+      rows: [...days].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([d, c]) => ({ name: d, value: fmt(c), tone: "pos" as const })),
+    },
+    {
+      type: "interpretation",
+      text:
+        lang === "en"
+          ? `Activity is concentrated in PTM windows. The 3 highest-volume days carry roughly 70% of weekly messages — schedule outreach campaigns 1 day before these peaks.`
+          : lang === "hi"
+            ? `गतिविधि PTM विंडो में केंद्रित है। शीर्ष 3 दिन साप्ताहिक संदेशों का लगभग 70% लाते हैं — इन शिखरों से 1 दिन पहले अभियान चलाएँ।`
+            : lang === "ta"
+              ? `செயல்பாடு PTM காலங்களில் குவிந்துள்ளது. மிக உயர் 3 நாட்கள் வாராந்திர செய்திகளில் ~70% கொண்டுள்ளன.`
+              : `ಚಟುವಟಿಕೆ PTM ಅವಧಿಗಳಲ್ಲಿ ಕೇಂದ್ರೀಕೃತವಾಗಿದೆ. ಅಗ್ರ 3 ದಿನಗಳು ಸಾಪ್ತಾಹಿಕ ಸಂದೇಶಗಳ ~70% ಹೊಂದಿವೆ.`,
+    },
+    { type: "followups", items: SUGGESTED_PROMPTS[lang].slice(0, 3) },
+  ];
+}
+
+function buildDefault(ctx: AnswerContext, lang: Language): AnswerBlock[] {
+  const m = metricsFor(ctx.program, ctx.state);
+  const lab = L[lang];
+  return [
+    { type: "kpi", label: lab.overview, value: `${fmt(m.total_msgs)} msgs · ${fmt(m.total_sessions)} sessions`, delta: ctx.rangeLabel, deltaDir: "flat" },
+    {
+      type: "breakdown",
+      label: lab.programCompare,
+      rows: (["chaupal_bihar", "chavadi_karnataka", "mi_bihar", "mi_karnataka"] as ProgramKey[]).map((p) => ({
+        name: PROGRAM_LABELS[lang][p],
+        value: fmt(METRICS[p].total_msgs),
+        delta: fmt(METRICS[p].total_sessions) + " sessions",
+      })),
+    },
+    {
+      type: "interpretation",
+      text:
+        lang === "en"
+          ? "MITRA is live across Bihar and Karnataka, running Chaupal/Chavadi parent conversations and Micro-Improvement story collection. Together the four programs have logged 4.23 lakh messages across 2.34 lakh parent sessions in the most recent month."
+          : lang === "hi"
+            ? "MITRA बिहार और कर्नाटक में सक्रिय है, चौपाल/चावड़ी अभिभावक बातचीत और सूक्ष्म सुधार कहानियाँ चला रहा है। चारों कार्यक्रमों ने हाल के महीने में 4.23 लाख संदेश और 2.34 लाख सत्र दर्ज किए हैं।"
+            : lang === "ta"
+              ? "MITRA பீகார் மற்றும் கர்நாடகாவில் இயங்குகிறது, சௌபால்/சாவடி பெற்றோர் உரையாடல்கள் மற்றும் நுண் முன்னேற்ற கதைகளை சேகரிக்கிறது. நான்கு திட்டங்களும் சேர்ந்து 4.23 லட்சம் செய்திகளை பதிவு செய்துள்ளன."
+              : "MITRA ಬಿಹಾರ ಮತ್ತು ಕರ್ನಾಟಕದಲ್ಲಿ ಸಕ್ರಿಯವಾಗಿದೆ. ನಾಲ್ಕು ಕಾರ್ಯಕ್ರಮಗಳು ಒಟ್ಟಾಗಿ 4.23 ಲಕ್ಷ ಸಂದೇಶಗಳನ್ನು ದಾಖಲಿಸಿವೆ.",
+    },
+    { type: "followups", items: SUGGESTED_PROMPTS[lang].slice(0, 3) },
+  ];
+}
+
+export function generateAnswer(question: string, language: Language, ctx: AnswerContext): Answer {
   const intent = routeIntent(question);
-  const template = T[language][intent];
+  const m = metricsFor(ctx.program, ctx.state);
+  let blocks: AnswerBlock[];
+  switch (intent) {
+    case "volume": blocks = buildVolume(ctx, language); break;
+    case "completion": blocks = buildCompletion(ctx, language); break;
+    case "stages": blocks = buildStages(ctx, language); break;
+    case "compare_program": blocks = buildProgramCompare(ctx, language); break;
+    case "compare_state": blocks = buildStateCompare(ctx, language); break;
+    case "trend": blocks = buildTrend(ctx, language); break;
+    default: blocks = buildDefault(ctx, language);
+  }
   return {
     id: crypto.randomUUID(),
     question,
     language,
     createdAt: new Date().toISOString(),
-    ...template,
+    source: makeSource(ctx, language, m),
+    blocks,
   };
 }
-
-// Right-rail context options (per language)
-export const STATES_OPT: Record<Language, string[]> = {
-  en: ["All India", "Uttar Pradesh", "Karnataka", "Madhya Pradesh", "Tamil Nadu", "Maharashtra"],
-  hi: ["संपूर्ण भारत", "उत्तर प्रदेश", "कर्नाटक", "मध्य प्रदेश", "तमिलनाडु", "महाराष्ट्र"],
-  ta: ["இந்தியா முழுவதும்", "உத்தரப் பிரதேசம்", "கர்நாடகா", "மத்தியப் பிரதேசம்", "தமிழ்நாடு", "மகாராஷ்டிரா"],
-  kn: ["ಇಡೀ ಭಾರತ", "ಉತ್ತರ ಪ್ರದೇಶ", "ಕರ್ನಾಟಕ", "ಮಧ್ಯ ಪ್ರದೇಶ", "ತಮಿಳುನಾಡು", "ಮಹಾರಾಷ್ಟ್ರ"],
-};
-
-export const COLLECTIVES_OPT: Record<Language, string[]> = {
-  en: ["All collectives", "System Leadership", "Women Leadership", "Youth Leadership", "Commons"],
-  hi: ["सभी सामूहिक", "सिस्टम नेतृत्व", "महिला नेतृत्व", "युवा नेतृत्व", "कॉमन्स"],
-  ta: ["அனைத்து கூட்டுகள்", "அமைப்பு தலைமை", "பெண்கள் தலைமை", "இளைஞர் தலைமை", "காமன்ஸ்"],
-  kn: ["ಎಲ್ಲಾ ಸಮೂಹಗಳು", "ವ್ಯವಸ್ಥಿತ ನಾಯಕತ್ವ", "ಮಹಿಳಾ ನಾಯಕತ್ವ", "ಯುವ ನಾಯಕತ್ವ", "ಕಾಮನ್ಸ್"],
-};
-
-export const RANGES_OPT: Record<Language, string[]> = {
-  en: ["Today", "Last 7 days", "Last 30 days", "This quarter"],
-  hi: ["आज", "पिछले 7 दिन", "पिछले 30 दिन", "इस तिमाही"],
-  ta: ["இன்று", "கடந்த 7 நாட்கள்", "கடந்த 30 நாட்கள்", "இந்த காலாண்டு"],
-  kn: ["ಇಂದು", "ಕಳೆದ 7 ದಿನಗಳು", "ಕಳೆದ 30 ದಿನಗಳು", "ಈ ತ್ರೈಮಾಸಿಕ"],
-};
