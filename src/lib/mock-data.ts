@@ -834,15 +834,17 @@ function buildTrend(ctx: AnswerContext, lang: Language): AnswerBlock[] {
     },
     {
       type: "interpretation",
-      text:
+      text: roleScope(ctx.role, lang) + " " + (
         lang === "en"
-          ? `Activity is concentrated in PTM windows. The 3 highest-volume days carry roughly 70% of weekly messages — schedule outreach campaigns 1 day before these peaks.`
+          ? `Activity is concentrated in PTM windows. Top 3 days carry ~70% of weekly messages. Set a >2σ anomaly alert against a 28-day rolling baseline and capacity-plan against the 95th-percentile day, not the mean.`
           : lang === "hi"
-            ? `गतिविधि PTM विंडो में केंद्रित है। शीर्ष 3 दिन साप्ताहिक संदेशों का लगभग 70% लाते हैं — इन शिखरों से 1 दिन पहले अभियान चलाएँ।`
+            ? `गतिविधि PTM विंडो में केंद्रित है। शीर्ष 3 दिन साप्ताहिक संदेशों का ~70%। 28-दिन रोलिंग बेसलाइन पर >2σ अलर्ट सेट करें।`
             : lang === "ta"
-              ? `செயல்பாடு PTM காலங்களில் குவிந்துள்ளது. மிக உயர் 3 நாட்கள் வாராந்திர செய்திகளில் ~70% கொண்டுள்ளன.`
-              : `ಚಟುವಟಿಕೆ PTM ಅವಧಿಗಳಲ್ಲಿ ಕೇಂದ್ರೀಕೃತವಾಗಿದೆ. ಅಗ್ರ 3 ದಿನಗಳು ಸಾಪ್ತಾಹಿಕ ಸಂದೇಶಗಳ ~70% ಹೊಂದಿವೆ.`,
+              ? `செயல்பாடு PTM காலங்களில் குவிந்துள்ளது. 28-நாள் ரோலிங் பேஸ்லைனில் >2σ எச்சரிக்கையை அமைக்கவும்.`
+              : `ಚಟುವಟಿಕೆ PTM ಅವಧಿಗಳಲ್ಲಿ ಕೇಂದ್ರೀಕೃತ. 28-ದಿನಗಳ ರೋಲಿಂಗ್ ಬೇಸ್‌ಲೈನ್‌ನಲ್ಲಿ >2σ ಎಚ್ಚರಿಕೆ ಸ್ಥಾಪಿಸಿ.`
+      ),
     },
+    { type: "remedials", items: remediationsFor(ctx.role, "trend", lang) },
     { type: "followups", items: SUGGESTED_PROMPTS[lang].slice(0, 3) },
   ];
 }
