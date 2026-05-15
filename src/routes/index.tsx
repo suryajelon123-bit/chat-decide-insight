@@ -57,7 +57,7 @@ function Index() {
     setTurns((prev) => [...prev, userTurn]);
     setBusy(true);
     setTimeout(() => {
-      const answer = generateAnswer(q, language, { program, state: stateFilter, rangeKey, rangeLabel });
+      const answer = generateAnswer(q, language, { program, state: stateFilter, rangeKey, rangeLabel, role: typedRole });
       setTurns((prev) => [...prev, { id: crypto.randomUUID(), role: "assistant", answer }]);
       setBusy(false);
     }, 800);
