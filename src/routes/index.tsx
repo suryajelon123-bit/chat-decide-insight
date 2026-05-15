@@ -32,6 +32,7 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const [role, setRole] = useState<string>("Program Manager");
+  const typedRole = (role as "Program Manager" | "Org Admin" | "Tenant Admin");
   const [language, setLanguage] = useState<Language>("en");
   const [stateFilter, setStateFilter] = useState<StateKey>("all");
   const [program, setProgram] = useState<ProgramKey>("all");
