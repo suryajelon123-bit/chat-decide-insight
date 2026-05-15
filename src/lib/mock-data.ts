@@ -669,15 +669,17 @@ function buildVolume(ctx: AnswerContext, lang: Language): AnswerBlock[] {
     { type: "trend", label: lab.dailyTrend, period: ctx.rangeLabel, points: days.map(([, c]) => c) },
     {
       type: "interpretation",
-      text:
+      text: roleScope(ctx.role, lang) + " " + (
         lang === "en"
-          ? `Across ${PROGRAM_LABELS.en[ctx.program]} (${STATE_LABELS.en[ctx.state]}), ${fmt(msgsInRange)} messages were exchanged in ${ctx.rangeLabel.toLowerCase()} from ${fmt(sessInRange)} parent sessions. Activity peaks during PTM cycles — the top 3 days account for the majority of volume.`
+          ? `Across ${PROGRAM_LABELS.en[ctx.program]} (${STATE_LABELS.en[ctx.state]}), ${fmt(msgsInRange)} messages were exchanged in ${ctx.rangeLabel.toLowerCase()} from ${fmt(sessInRange)} parent sessions. Activity peaks during PTM cycles — the top 3 days account for the majority of volume. Use this base to size the next experiment cohort.`
           : lang === "hi"
-            ? `${PROGRAM_LABELS.hi[ctx.program]} (${STATE_LABELS.hi[ctx.state]}) में ${ctx.rangeLabel} के दौरान ${fmt(sessInRange)} अभिभावक सत्रों से ${fmt(msgsInRange)} संदेशों का आदान-प्रदान हुआ। PTM चक्रों के दौरान गतिविधि चरम पर रहती है।`
+            ? `${PROGRAM_LABELS.hi[ctx.program]} (${STATE_LABELS.hi[ctx.state]}) में ${ctx.rangeLabel} के दौरान ${fmt(sessInRange)} सत्रों से ${fmt(msgsInRange)} संदेशों का आदान-प्रदान हुआ। PTM शिखर के दौरान गतिविधि चरम पर है — अगले प्रयोग कोहर्ट का आकार तय करने के लिए इसे आधार बनाएँ।`
             : lang === "ta"
-              ? `${PROGRAM_LABELS.ta[ctx.program]} (${STATE_LABELS.ta[ctx.state]}) இல் ${ctx.rangeLabel} காலத்தில் ${fmt(sessInRange)} பெற்றோர் அமர்வுகளில் இருந்து ${fmt(msgsInRange)} செய்திகள் பரிமாறப்பட்டன. PTM சுழற்சிகளின் போது செயல்பாடு உச்சத்தில் உள்ளது.`
-              : `${PROGRAM_LABELS.kn[ctx.program]} (${STATE_LABELS.kn[ctx.state]}) ನಲ್ಲಿ ${ctx.rangeLabel} ಅವಧಿಯಲ್ಲಿ ${fmt(sessInRange)} ಪೋಷಕ ಸೆಷನ್‌ಗಳಿಂದ ${fmt(msgsInRange)} ಸಂದೇಶಗಳು ವಿನಿಮಯವಾದವು. PTM ಚಕ್ರಗಳಲ್ಲಿ ಚಟುವಟಿಕೆ ಗರಿಷ್ಠ ಮಟ್ಟದಲ್ಲಿರುತ್ತದೆ.`,
+              ? `${PROGRAM_LABELS.ta[ctx.program]} (${STATE_LABELS.ta[ctx.state]}) இல் ${ctx.rangeLabel} இல் ${fmt(sessInRange)} அமர்வுகளில் இருந்து ${fmt(msgsInRange)} செய்திகள். PTM உச்சங்களில் குவிவு — அடுத்த சோதனை கூட்டத்தின் அளவை இதன் அடிப்படையில் தீர்மானிக்கவும்.`
+              : `${PROGRAM_LABELS.kn[ctx.program]} (${STATE_LABELS.kn[ctx.state]}) ನಲ್ಲಿ ${ctx.rangeLabel} ರಲ್ಲಿ ${fmt(sessInRange)} ಸೆಷನ್‌ಗಳಿಂದ ${fmt(msgsInRange)} ಸಂದೇಶಗಳು. PTM ಗರಿಷ್ಠಗಳಲ್ಲಿ ಕೇಂದ್ರೀಕೃತ — ಮುಂದಿನ ಪ್ರಯೋಗ ಗಾತ್ರಕ್ಕೆ ಆಧಾರವಾಗಿ ಬಳಸಿ.`
+      ),
     },
+    { type: "remedials", items: remediationsFor(ctx.role, "volume", lang) },
     { type: "followups", items: SUGGESTED_PROMPTS[lang].slice(1, 4) },
   ];
 }
