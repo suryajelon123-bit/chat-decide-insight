@@ -24,7 +24,40 @@ export const LANGUAGES: { code: Language; label: string; native: string }[] = [
   { code: "kn", label: "Kannada", native: "ಕನ್ನಡ" },
 ];
 
-export const ROLES = ["Program Manager", "State Lead", "District Lead"] as const;
+export const ROLES = ["Program Manager", "Org Admin", "Tenant Admin"] as const;
+export type Role = typeof ROLES[number];
+
+// ---------------- MITRA catalog (from GW Metabase dashboards) ----------------
+// Leader categories: Women Leader (WL), School Leader (SL), Youth Leader (YL)
+export const LEADER_CATEGORIES = ["WL", "SL", "YL"] as const;
+export const MITRA_DASHBOARDS: { dashboard: string; program: string; leader: "WL" | "SL" | "YL" | "—"; state: string }[] = [
+  { dashboard: "WLC — Bihar Chaupal",            program: "Shiksha Chaupals",      leader: "WL", state: "Bihar" },
+  { dashboard: "WLC — Karnataka Chavadis",       program: "Shikshana Chavadis",    leader: "WL", state: "Karnataka" },
+  { dashboard: "WLC — Bihar MI Story",           program: "Shiksha Chaupals",      leader: "WL", state: "Bihar" },
+  { dashboard: "WLC — Karnataka MI Story",       program: "Shikshana Chavadis",    leader: "WL", state: "Karnataka" },
+  { dashboard: "Nagaland MI Story",              program: "LNF",                   leader: "SL", state: "Nagaland" },
+  { dashboard: "SLC — Karnataka MI Story",       program: "SLC",                   leader: "SL", state: "Karnataka" },
+  { dashboard: "YLC — Karnataka",                program: "YLC",                   leader: "YL", state: "Karnataka" },
+  { dashboard: "Mega PTM",                       program: "Mega PTM",              leader: "—",  state: "All" },
+  { dashboard: "Bihar Parent Perception Survey", program: "Parent perception",     leader: "—",  state: "Bihar" },
+  { dashboard: "Shiksha Samvad",                 program: "Future readiness",      leader: "—",  state: "All" },
+  { dashboard: "Bihar Listening Activity",       program: "Impact assessment",     leader: "—",  state: "Bihar" },
+  { dashboard: "Nagaland Listening Activity",    program: "Impact assessment",     leader: "—",  state: "Nagaland" },
+];
+
+// MI discussion themes (from program documentation)
+export const MI_THEMES = [
+  "Poverty and Economic Barriers",
+  "Legal Document linked Barriers",
+  "Early Marriage",
+  "Distance and Accessibility Issues",
+  "Parental Attitudes and Socio-Cultural Barriers",
+  "School Infrastructure and Facility Issues",
+  "Teacher Capacity and Quality Issues",
+  "Safety Concerns",
+  "Substance Abuse and Addiction",
+  "Other Factors",
+] as const;
 
 // ---------------- Programs / Filters ----------------
 export type ProgramKey = "all" | "chaupal_bihar" | "chavadi_karnataka" | "mi_bihar" | "mi_karnataka";
