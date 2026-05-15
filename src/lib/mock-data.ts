@@ -763,7 +763,7 @@ function buildStages(ctx: AnswerContext, lang: Language): AnswerBlock[] {
   ];
 }
 
-function buildProgramCompare(_ctx: AnswerContext, lang: Language): AnswerBlock[] {
+function buildProgramCompare(ctx: AnswerContext, lang: Language): AnswerBlock[] {
   const lab = L[lang];
   const programs: ProgramKey[] = ["chaupal_bihar", "chavadi_karnataka", "mi_bihar", "mi_karnataka"];
   return [
@@ -777,20 +777,22 @@ function buildProgramCompare(_ctx: AnswerContext, lang: Language): AnswerBlock[]
     },
     {
       type: "interpretation",
-      text:
+      text: roleScope(ctx.role, lang) + " " + (
         lang === "en"
-          ? "All four programs are running at near-equal scale (~105K messages each, ~58K sessions). Bihar Chaupal and Karnataka Chavadi mirror each other closely; Micro-Improvement story conversations are slightly larger in both states because parents tend to share longer narratives."
+          ? "All four programs run at near-equal raw scale (~105K msgs, ~58K sessions each). Before drawing conclusions, normalize by active-facilitator-days and run a propensity match across Bihar/Karnataka cohorts — raw counts alone confound scale with intensity."
           : lang === "hi"
-            ? "चारों कार्यक्रम लगभग समान पैमाने पर चल रहे हैं (~1.05 लाख संदेश प्रत्येक, ~58 हज़ार सत्र)। बिहार चौपाल और कर्नाटक चावड़ी एक-दूसरे का प्रतिबिम्ब हैं; सूक्ष्म सुधार कहानी बातचीत थोड़ी बड़ी है।"
+            ? "चारों कार्यक्रम लगभग समान कच्चे पैमाने पर हैं। निष्कर्ष से पहले सक्रिय-फैसिलिटेटर-दिवस के अनुसार सामान्यीकृत करें और प्रोपेन्सिटी मिलान चलाएँ।"
             : lang === "ta"
-              ? "நான்கு திட்டங்களும் கிட்டத்தட்ட சம அளவில் இயங்குகின்றன (~1.05 லட்சம் செய்திகள் ஒவ்வொன்றும், ~58 ஆயிரம் அமர்வுகள்). நுண் முன்னேற்ற கதை உரையாடல்கள் சற்று பெரியவை."
-              : "ನಾಲ್ಕು ಕಾರ್ಯಕ್ರಮಗಳು ಬಹುತೇಕ ಸಮಾನ ಪ್ರಮಾಣದಲ್ಲಿ ನಡೆಯುತ್ತಿವೆ (~1.05 ಲಕ್ಷ ಸಂದೇಶಗಳು ಪ್ರತಿ, ~58 ಸಾವಿರ ಸೆಷನ್‌ಗಳು). ಸೂಕ್ಷ್ಮ ಸುಧಾರಣಾ ಕಥಾ ಸಂಭಾಷಣೆಗಳು ಸ್ವಲ್ಪ ದೊಡ್ಡವು.",
+              ? "நான்கு திட்டங்களும் கச்சா அளவில் சமம். முடிவுக்கு முன், செயலில் உள்ள ஃபெசிலிடேட்டர் நாட்களுக்கு ஏற்ப இயல்வாக்கம் செய்யவும்."
+              : "ನಾಲ್ಕು ಕಾರ್ಯಕ್ರಮಗಳು ಕಚ್ಚಾ ಪ್ರಮಾಣದಲ್ಲಿ ಸಮಾನ. ಸಕ್ರಿಯ-ಫೆಸಿಲಿಟೇಟರ್-ದಿನಗಳಿಂದ ಸಾಮಾನ್ಯೀಕರಿಸಿ ನಂತರ ತೀರ್ಮಾನಿಸಿ."
+      ),
     },
+    { type: "remedials", items: remediationsFor(ctx.role, "compare", lang) },
     { type: "followups", items: SUGGESTED_PROMPTS[lang].slice(0, 3) },
   ];
 }
 
-function buildStateCompare(_ctx: AnswerContext, lang: Language): AnswerBlock[] {
+function buildStateCompare(ctx: AnswerContext, lang: Language): AnswerBlock[] {
   const lab = L[lang];
   const states: StateKey[] = ["Bihar", "Karnataka"];
   return [
@@ -804,15 +806,17 @@ function buildStateCompare(_ctx: AnswerContext, lang: Language): AnswerBlock[] {
     },
     {
       type: "interpretation",
-      text:
+      text: roleScope(ctx.role, lang) + " " + (
         lang === "en"
-          ? "Karnataka shows marginally higher message volume than Bihar across the same conversation surfaces, suggesting parents engage in slightly longer threads — a healthy depth signal."
+          ? "Karnataka shows marginally higher raw message volume than Bihar. Before reallocating budget, set up a difference-in-differences against the next content rollout — pick one state as treatment, the other as control."
           : lang === "hi"
-            ? "कर्नाटक में बिहार की तुलना में थोड़ी अधिक संदेश मात्रा है, जो दर्शाता है कि अभिभावक अधिक लंबी बातचीत में भाग लेते हैं।"
+            ? "कर्नाटक में बिहार से थोड़ी अधिक मात्रा है। बजट पुनः-आवंटन से पहले अगले कंटेंट रोलआउट पर DiD सेट करें।"
             : lang === "ta"
-              ? "பீகாரை விட கர்நாடகாவில் சற்று அதிக செய்தி அளவு உள்ளது, பெற்றோர்கள் நீண்ட உரையாடல்களில் ஈடுபடுகிறார்கள் என்பதைக் காட்டுகிறது."
-              : "ಬಿಹಾರಕ್ಕಿಂತ ಕರ್ನಾಟಕದಲ್ಲಿ ಸ್ವಲ್ಪ ಹೆಚ್ಚಿನ ಸಂದೇಶ ಪ್ರಮಾಣವಿದೆ.",
+              ? "கர்நாடகாவில் சற்று அதிக அளவு. பட்ஜெட் ஒதுக்கீட்டுக்கு முன் DiD அமைக்கவும்."
+              : "ಕರ್ನಾಟಕದಲ್ಲಿ ಸ್ವಲ್ಪ ಹೆಚ್ಚು. ಬಜೆಟ್ ಮರು ಹಂಚಿಕೆಗೆ ಮುನ್ನ DiD ಸ್ಥಾಪಿಸಿ."
+      ),
     },
+    { type: "remedials", items: remediationsFor(ctx.role, "compare", lang) },
     { type: "followups", items: SUGGESTED_PROMPTS[lang].slice(1, 4) },
   ];
 }
