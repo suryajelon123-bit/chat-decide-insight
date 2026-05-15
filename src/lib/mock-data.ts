@@ -705,6 +705,18 @@ function buildCompletion(ctx: AnswerContext, lang: Language): AnswerBlock[] {
       ],
     },
     {
+      type: "interpretation",
+      text: roleScope(ctx.role, lang) + " " + (
+        lang === "en"
+          ? `Of ${fmt(total)} sessions, ${rate} reached COMPLETED. The largest leak is between INTRODUCTION → PTM_DISCUSSION_TOPICS (${pct(started, total)} stall as STARTED-but-inactive). Treat this as the primary lever for the next experimentation cycle.`
+          : lang === "hi"
+            ? `${fmt(total)} सत्रों में से ${rate} पूर्ण हुए। सबसे बड़ा रिसाव परिचय → PTM चर्चा विषय के बीच है (${pct(started, total)} STARTED-निष्क्रिय)। अगले प्रयोग चक्र के लिए यही प्रमुख लीवर है।`
+            : lang === "ta"
+              ? `${fmt(total)} அமர்வுகளில் ${rate} முடிந்தது. மிகப்பெரிய கசிவு INTRODUCTION → PTM தலைப்புகளுக்கு இடையில் (${pct(started, total)} செயலற்றது). அடுத்த சோதனை சுழற்சிக்கான முதன்மை லீவர்.`
+              : `${fmt(total)} ಸೆಷನ್‌ಗಳಲ್ಲಿ ${rate} ಪೂರ್ಣಗೊಂಡಿವೆ. ಅತಿ ದೊಡ್ಡ ಸೋರಿಕೆ INTRODUCTION → PTM ಚರ್ಚಾ ವಿಷಯಗಳ ನಡುವೆ (${pct(started, total)} ನಿಷ್ಕ್ರಿಯ). ಮುಂದಿನ ಪ್ರಯೋಗ ಚಕ್ರಕ್ಕೆ ಪ್ರಮುಖ ಲೀವರ್.`
+      ),
+    },
+    {
       type: "drivers",
       items: [
         { label: lang === "en" ? "Long PTM topic stage causing fatigue" : "PTM विषय चरण थकान का कारण", impact: pct(inProgress, total), tone: "neg" },
@@ -714,34 +726,7 @@ function buildCompletion(ctx: AnswerContext, lang: Language): AnswerBlock[] {
     },
     {
       type: "remedials",
-      items:
-        lang === "en"
-          ? [
-              "Split PTM_DISCUSSION_TOPICS into 2 shorter prompts to reduce fatigue.",
-              "Send a one-tap WhatsApp re-engagement nudge for sessions paused >24h.",
-              "A/B test a shorter introduction stage in 2 districts.",
-              "Surface a progress bar so parents see how few steps remain.",
-            ]
-          : lang === "hi"
-            ? [
-                "थकान कम करने के लिए PTM_DISCUSSION_TOPICS को 2 छोटे प्रॉम्प्ट में बाँटें।",
-                "24 घंटे से अधिक रुके सत्रों के लिए WhatsApp री-एंगेजमेंट भेजें।",
-                "2 ज़िलों में छोटे परिचय चरण का A/B टेस्ट करें।",
-                "अभिभावकों को प्रगति बार दिखाएँ।",
-              ]
-            : lang === "ta"
-              ? [
-                  "சோர்வைக் குறைக்க PTM_DISCUSSION_TOPICS ஐ 2 குறுகிய தூண்டுதல்களாகப் பிரிக்கவும்.",
-                  "24 மணி நேரத்திற்கு மேல் இடைநிறுத்தப்பட்ட அமர்வுகளுக்கு WhatsApp தூண்டுதல் அனுப்பவும்.",
-                  "2 மாவட்டங்களில் சுருக்கமான அறிமுக நிலையை A/B சோதிக்கவும்.",
-                  "முன்னேற்ற பட்டியைக் காட்டுங்கள்.",
-                ]
-              : [
-                  "ಆಯಾಸವನ್ನು ಕಡಿಮೆ ಮಾಡಲು PTM_DISCUSSION_TOPICS ಅನ್ನು 2 ಚಿಕ್ಕ ಪ್ರಾಂಪ್ಟ್‌ಗಳಾಗಿ ವಿಭಜಿಸಿ.",
-                  "24 ಗಂಟೆಗಳ ನಂತರ ವಿರಾಮಗೊಂಡ ಸೆಷನ್‌ಗಳಿಗೆ WhatsApp ರಿ-ಎಂಗೇಜ್‌ಮೆಂಟ್ ಕಳುಹಿಸಿ.",
-                  "2 ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಚಿಕ್ಕ ಪರಿಚಯ ಹಂತದ A/B ಪರೀಕ್ಷೆ ಮಾಡಿ.",
-                  "ಪೋಷಕರಿಗೆ ಪ್ರಗತಿ ಬಾರ್ ತೋರಿಸಿ.",
-                ],
+      items: remediationsFor(ctx.role, "completion", lang),
     },
     { type: "followups", items: SUGGESTED_PROMPTS[lang].filter((_, i) => i !== 5).slice(0, 3) },
   ];
