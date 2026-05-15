@@ -748,15 +748,17 @@ function buildStages(ctx: AnswerContext, lang: Language): AnswerBlock[] {
     },
     {
       type: "interpretation",
-      text:
+      text: roleScope(ctx.role, lang) + " " + (
         lang === "en"
-          ? `PTM-related stages dominate engagement: discussion topics, scheduling, and attendance barriers together drive over a third of all messages. School experience feedback is the strongest qualitative signal — it's where parents share what's working.`
+          ? `PTM-related stages drive over a third of all messages: discussion topics, scheduling, attendance barriers. School experience feedback is the strongest qualitative signal — pipe it into the next content review. Treat any stage with <70% pass-through as a candidate for a content-variant test.`
           : lang === "hi"
-            ? `PTM से जुड़े चरण भागीदारी में अग्रणी हैं: चर्चा विषय, समय निर्धारण, और उपस्थिति बाधाएँ मिलकर सभी संदेशों का एक तिहाई से अधिक हैं। स्कूल अनुभव फीडबैक सबसे मजबूत गुणात्मक संकेत है।`
+            ? `PTM से जुड़े चरण सभी संदेशों का एक तिहाई से अधिक हैं। स्कूल अनुभव फीडबैक सबसे मज़बूत संकेत है। 70% से कम पास-थ्रू वाले हर चरण को कंटेंट-वैरिएंट परीक्षण का उम्मीदवार मानें।`
             : lang === "ta"
-              ? `PTM தொடர்பான நிலைகள் ஈடுபாட்டில் முன்னணியில் உள்ளன: விவாத தலைப்புகள், அட்டவணை, மற்றும் வருகை தடைகள் ஒன்றாக அனைத்து செய்திகளில் மூன்றில் ஒரு பகுதிக்கு மேல் உள்ளன.`
-              : `PTM ಸಂಬಂಧಿತ ಹಂತಗಳು ತೊಡಗಿಸಿಕೊಳ್ಳುವಿಕೆಯಲ್ಲಿ ಮುಂಚೂಣಿಯಲ್ಲಿವೆ: ಚರ್ಚಾ ವಿಷಯಗಳು, ವೇಳಾಪಟ್ಟಿ ಮತ್ತು ಹಾಜರಾತಿ ಅಡೆತಡೆಗಳು ಒಟ್ಟಾಗಿ ಎಲ್ಲಾ ಸಂದೇಶಗಳ ಮೂರನೇ ಒಂದು ಭಾಗಕ್ಕಿಂತ ಹೆಚ್ಚು.`,
+              ? `PTM தொடர்பான நிலைகள் செய்திகளில் மூன்றில் ஒரு பகுதிக்கு மேல். பள்ளி அனுபவ பின்னூட்டம் வலுவான சமிக்ஞை. <70% பாஸ்-த்ரோ நிலைகள் = உள்ளடக்க மாறுபாடு சோதனை வேட்பாளர்கள்.`
+              : `PTM ಸಂಬಂಧಿತ ಹಂತಗಳು ಸಂದೇಶಗಳ ಮೂರನೇ ಒಂದು ಭಾಗಕ್ಕಿಂತ ಹೆಚ್ಚು. ಶಾಲಾ ಅನುಭವ ಪ್ರತಿಕ್ರಿಯೆ ಪ್ರಬಲ ಸಂಕೇತ. <70% ಪಾಸ್-ಥ್ರೂ ಇರುವ ಹಂತಗಳು = ವಿಷಯ-ರೂಪಾಂತರ ಪ್ರಯೋಗ ಅಭ್ಯರ್ಥಿಗಳು.`
+      ),
     },
+    { type: "remedials", items: remediationsFor(ctx.role, "stages", lang) },
     { type: "followups", items: SUGGESTED_PROMPTS[lang].slice(2, 5) },
   ];
 }
