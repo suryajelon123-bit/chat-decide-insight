@@ -32,6 +32,7 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const [role, setRole] = useState<string>("Program Manager");
+  const typedRole = (role as "Program Manager" | "Org Admin" | "Tenant Admin");
   const [language, setLanguage] = useState<Language>("en");
   const [stateFilter, setStateFilter] = useState<StateKey>("all");
   const [program, setProgram] = useState<ProgramKey>("all");
@@ -56,7 +57,7 @@ function Index() {
     setTurns((prev) => [...prev, userTurn]);
     setBusy(true);
     setTimeout(() => {
-      const answer = generateAnswer(q, language, { program, state: stateFilter, rangeKey, rangeLabel });
+      const answer = generateAnswer(q, language, { program, state: stateFilter, rangeKey, rangeLabel, role: typedRole });
       setTurns((prev) => [...prev, { id: crypto.randomUUID(), role: "assistant", answer }]);
       setBusy(false);
     }, 800);

@@ -24,7 +24,40 @@ export const LANGUAGES: { code: Language; label: string; native: string }[] = [
   { code: "kn", label: "Kannada", native: "ಕನ್ನಡ" },
 ];
 
-export const ROLES = ["Program Manager", "State Lead", "District Lead"] as const;
+export const ROLES = ["Program Manager", "Org Admin", "Tenant Admin"] as const;
+export type Role = typeof ROLES[number];
+
+// ---------------- MITRA catalog (from GW Metabase dashboards) ----------------
+// Leader categories: Women Leader (WL), School Leader (SL), Youth Leader (YL)
+export const LEADER_CATEGORIES = ["WL", "SL", "YL"] as const;
+export const MITRA_DASHBOARDS: { dashboard: string; program: string; leader: "WL" | "SL" | "YL" | "—"; state: string }[] = [
+  { dashboard: "WLC — Bihar Chaupal",            program: "Shiksha Chaupals",      leader: "WL", state: "Bihar" },
+  { dashboard: "WLC — Karnataka Chavadis",       program: "Shikshana Chavadis",    leader: "WL", state: "Karnataka" },
+  { dashboard: "WLC — Bihar MI Story",           program: "Shiksha Chaupals",      leader: "WL", state: "Bihar" },
+  { dashboard: "WLC — Karnataka MI Story",       program: "Shikshana Chavadis",    leader: "WL", state: "Karnataka" },
+  { dashboard: "Nagaland MI Story",              program: "LNF",                   leader: "SL", state: "Nagaland" },
+  { dashboard: "SLC — Karnataka MI Story",       program: "SLC",                   leader: "SL", state: "Karnataka" },
+  { dashboard: "YLC — Karnataka",                program: "YLC",                   leader: "YL", state: "Karnataka" },
+  { dashboard: "Mega PTM",                       program: "Mega PTM",              leader: "—",  state: "All" },
+  { dashboard: "Bihar Parent Perception Survey", program: "Parent perception",     leader: "—",  state: "Bihar" },
+  { dashboard: "Shiksha Samvad",                 program: "Future readiness",      leader: "—",  state: "All" },
+  { dashboard: "Bihar Listening Activity",       program: "Impact assessment",     leader: "—",  state: "Bihar" },
+  { dashboard: "Nagaland Listening Activity",    program: "Impact assessment",     leader: "—",  state: "Nagaland" },
+];
+
+// MI discussion themes (from program documentation)
+export const MI_THEMES = [
+  "Poverty and Economic Barriers",
+  "Legal Document linked Barriers",
+  "Early Marriage",
+  "Distance and Accessibility Issues",
+  "Parental Attitudes and Socio-Cultural Barriers",
+  "School Infrastructure and Facility Issues",
+  "Teacher Capacity and Quality Issues",
+  "Safety Concerns",
+  "Substance Abuse and Addiction",
+  "Other Factors",
+] as const;
 
 // ---------------- Programs / Filters ----------------
 export type ProgramKey = "all" | "chaupal_bihar" | "chavadi_karnataka" | "mi_bihar" | "mi_karnataka";
@@ -466,10 +499,12 @@ export type AnswerContext = {
   state: StateKey;
   rangeKey: string;
   rangeLabel: string;
+  role: Role;
 };
 
 function makeSource(ctx: AnswerContext, lang: Language, m: Metrics): Source {
   const filters: string[] = [];
+  filters.push(`${UI[lang].role} = ${ctx.role}`);
   filters.push(`${UI[lang].program} = ${PROGRAM_LABELS[lang][ctx.program]}`);
   filters.push(`${UI[lang].state} = ${STATE_LABELS[lang][ctx.state]}`);
   return {
@@ -478,6 +513,147 @@ function makeSource(ctx: AnswerContext, lang: Language, m: Metrics): Source {
     timeRange: ctx.rangeLabel,
     rows: m.total_msgs,
   };
+}
+
+// ---------------- Role lens: who decides what ----------------
+// Program Manager: operational dials (cohorts, content variants, facilitator deployment, sample-size driven experiments)
+// Org Admin:       cross-program rollups, SLAs, data quality, escalations, capacity planning
+// Tenant Admin:    multi-tenant governance, access policies, data residency, platform health, billing/quota
+function roleScope(role: Role, lang: Language): string {
+  const en = {
+    "Program Manager": "Program Manager view — focus on cohort experiments, facilitator deployment, and content-variant decisions.",
+    "Org Admin": "Org Admin view — focus on cross-program SLAs, data-quality gates, and capacity reallocation across states.",
+    "Tenant Admin": "Tenant Admin view — focus on tenant-level governance, access policies, telemetry health, and quota planning.",
+  } as const;
+  const hi = {
+    "Program Manager": "कार्यक्रम प्रबंधक दृष्टि — कोहर्ट प्रयोग, फैसिलिटेटर नियुक्ति, और कंटेंट वैरिएंट निर्णय।",
+    "Org Admin": "ऑर्ग एडमिन दृष्टि — कार्यक्रमों में SLA, डेटा-गुणवत्ता गेट, राज्यों में क्षमता पुनः-आवंटन।",
+    "Tenant Admin": "टेनेंट एडमिन दृष्टि — टेनेंट गवर्नेंस, एक्सेस नीतियाँ, टेलीमेट्री स्वास्थ्य, और कोटा योजना।",
+  } as const;
+  const ta = {
+    "Program Manager": "திட்ட மேலாளர் பார்வை — கூட்டப் பரிசோதனைகள், எளிமைப்படுத்துநர் ஒதுக்கீடு, உள்ளடக்க மாறுபாடு முடிவுகள்.",
+    "Org Admin": "ஒர்க் நிர்வாகி பார்வை — திட்டங்கள் முழுவதும் SLA, தரவுத் தரக் கட்டுப்பாடுகள், மாநில திறன் மறுஒதுக்கீடு.",
+    "Tenant Admin": "டெனண்ட் நிர்வாகி பார்வை — டெனண்ட் ஆளுகை, அணுகல் கொள்கைகள், தொலைஅளவு ஆரோக்கியம், ஒதுக்கீட்டு திட்டமிடல்.",
+  } as const;
+  const kn = {
+    "Program Manager": "ಕಾರ್ಯಕ್ರಮ ವ್ಯವಸ್ಥಾಪಕ ನೋಟ — ಕೋಹೋರ್ಟ್ ಪ್ರಯೋಗಗಳು, ಫೆಸಿಲಿಟೇಟರ್ ನಿಯೋಜನೆ, ವಿಷಯ ರೂಪಾಂತರ ನಿರ್ಧಾರಗಳು.",
+    "Org Admin": "ಆರ್ಗ್ ಅಡ್ಮಿನ್ ನೋಟ — ಕಾರ್ಯಕ್ರಮ-ವ್ಯಾಪಿ SLA, ಡೇಟಾ-ಗುಣಮಟ್ಟ ಗೇಟ್‌ಗಳು, ರಾಜ್ಯ ಸಾಮರ್ಥ್ಯ ಮರು ಹಂಚಿಕೆ.",
+    "Tenant Admin": "ಟೆನೆಂಟ್ ಅಡ್ಮಿನ್ ನೋಟ — ಟೆನೆಂಟ್ ಆಡಳಿತ, ಪ್ರವೇಶ ನೀತಿಗಳು, ಟೆಲಿಮೆಟ್ರಿ ಆರೋಗ್ಯ, ಕೋಟಾ ಯೋಜನೆ.",
+  } as const;
+  return ({ en, hi, ta, kn } as const)[lang][role];
+}
+
+// ---------------- Data-driven remediation library ----------------
+// Outputs experiment specs (hypothesis · variant · sample size · primary metric · MDE · guardrail)
+// rather than UX cosmetics. Tailored per role and per intent.
+type Topic = "completion" | "stages" | "trend" | "volume" | "compare" | "themes" | "default";
+
+function remediationsFor(role: Role, topic: Topic, lang: Language): string[] {
+  const PM: Record<Topic, string[]> = {
+    completion: [
+      "A/B test: split PTM_DISCUSSION_TOPICS into 2 shorter prompts. Control = current; Variant = chunked. n≥1,800/arm, primary = COMPLETED rate, MDE +3pp, 14-day run, guardrail = avg messages/session.",
+      "Cohort experiment: enable a 24-hour WhatsApp re-engagement nudge for PAUSED sessions in 3 randomized districts; compare reactivation rate vs 3 holdout districts.",
+      "Stratify completion by facilitator: flag bottom-quartile facilitators (>15pp below district median, n≥30 sessions) and trigger a structured coaching loop.",
+      "Set a weekly alert when COMPLETED rate drops >5pp WoW at the block level; auto-create a triage ticket with the top 3 drop-off stages.",
+    ],
+    stages: [
+      "Funnel diagnostic: compute stage-to-stage retention; any stage with <70% pass-through becomes a candidate for a content variant test.",
+      "A/B test the lowest-retention stage with 2 alternative phrasings (n≥1,500/arm, MDE +4pp on next-stage entry, 10-day run).",
+      "Quasi-experiment: roll out the winning variant in 1 state and use the other state as a synthetic control; report DiD on completion.",
+      "Add a guardrail metric: drop-off must not increase on adjacent stages by more than 1.5pp before promoting the variant.",
+    ],
+    trend: [
+      "Pre-PTM nudge experiment: send outreach 24h before predicted peak in 50% of blocks (random assignment); measure peak-day session lift vs control.",
+      "Time-series anomaly rule: alert when daily messages deviate >2σ from a 28-day rolling baseline; auto-attach the top 3 stages and likely cause.",
+      "Capacity-plan against the 95th-percentile peak day, not the mean — re-baseline every 4 weeks.",
+    ],
+    volume: [
+      "Run a power calculation before any rollout: with current weekly base, an MDE of +2pp on completion needs ~3,400 sessions/arm.",
+      "Tag every outreach campaign with a UTM-style cohort id so volume lift can be attributed (campaign vs organic vs facilitator-driven).",
+      "Sampling audit: pull a 500-session random sample monthly and verify language detection + stage labels (target ≥97% agreement).",
+    ],
+    compare: [
+      "Difference-in-differences: pick a leading state as treatment, lagging state as control, and measure completion delta after rolling out the next content change.",
+      "Normalize by active-facilitator-days before comparing programs — raw counts mix scale with intensity.",
+      "Build a propensity-matched cohort across Bihar and Karnataka on session-length and stage entry to make program comparisons causal, not just descriptive.",
+    ],
+    themes: [
+      "Tag MI stories to the 10 canonical themes; alert when any theme exceeds 1.5× its 8-week baseline share — that is a signal for a targeted intervention.",
+      "Run a content experiment for the top-2 themes (e.g., Distance, Parental Attitudes): test 2 facilitator scripts, n≥1,200 stories/arm, primary = theme-resolution flag, 21-day run.",
+      "Cross-tab themes × district to identify hot-spots (>2σ above state mean) and prioritize field deployment there.",
+    ],
+    default: [
+      "Stand up a weekly experiment review: every active A/B test reports power, lift, p-value, and guardrail status.",
+      "Adopt a freeze rule: no metric definition changes during an active experiment window.",
+    ],
+  };
+  const ORG: Record<Topic, string[]> = {
+    completion: [
+      "Set an org-level SLA: ≥40% COMPLETED rate per program-state cell; auto-escalate cells under SLA for two consecutive weeks.",
+      "Reallocate facilitator hours from over-capacity blocks (utilization <60%) to under-served blocks (waitlist >2 weeks).",
+      "Mandate a data-quality gate: program-state cells with <90% stage-label coverage are excluded from the org-level KPI until backfilled.",
+    ],
+    stages: [
+      "Standardize the stage taxonomy across Chaupal and Chavadi so cross-program funnels are comparable; deprecate any stage with <0.5% volume.",
+      "Quarterly content audit: any stage with ≥2 underperforming variants is escalated to the content design council.",
+    ],
+    trend: [
+      "Forecast next-quarter session volume per state using a 12-week trailing AR(1) and pre-position field-team capacity ±15% around the forecast.",
+      "Define an org-wide anomaly threshold (>2σ of 28-day baseline) that triggers cross-program review, not just program-level.",
+    ],
+    volume: [
+      "Publish a monthly capacity ratio (sessions per active facilitator per week) by state; investigate cells outside the [P25, P75] band.",
+      "Audit the top 5% of high-volume facilitators for quality drift — high volume without quality erodes the dataset.",
+    ],
+    compare: [
+      "Convert raw program counts into per-1,000-active-facilitator rates before any cross-state board reporting.",
+      "Triangulate program comparisons with a 3-source check (MITRA logs · facilitator reports · field audit) before resourcing decisions.",
+    ],
+    themes: [
+      "Map themes to state-level program priorities; flag any state where the top 3 themes do not match the published focus areas.",
+      "Stand up a quarterly theme council with field, content, and policy leads to reweight remediation budgets.",
+    ],
+    default: [
+      "Publish a single org KPI tree: Reach → Engagement → Completion → Theme-resolution. Every dashboard must roll up to one of these nodes.",
+      "Enforce a metric-definition registry; reject ad-hoc KPIs in board decks.",
+    ],
+  };
+  const TENANT: Record<Topic, string[]> = {
+    completion: [
+      "Validate that each tenant's COMPLETED rate is computed against the same status enum; flag tenants with custom statuses for normalization.",
+      "Set per-tenant ingestion SLOs: <0.5% missing status, <2-hour event-to-warehouse latency; alert on breach.",
+    ],
+    stages: [
+      "Audit tenants for stage-name drift; require a mapping table for any custom stage before it appears in cross-tenant rollups.",
+      "Enforce a schema-version pin per tenant; block rollout of new stages until the schema review passes.",
+    ],
+    trend: [
+      "Track per-tenant API quota consumption against the trend; pre-grant headroom for tenants approaching 80% of quota.",
+      "Watch for telemetry gaps (>4 contiguous low-volume hours) that look like outages, not behavior.",
+    ],
+    volume: [
+      "Per-tenant cost-per-session metric; alert on tenants whose unit cost is >1.5× the platform median.",
+      "Enforce data-residency: confirm Bihar/Karnataka events are written only to the in-region store.",
+    ],
+    compare: [
+      "Normalize cross-tenant comparisons by active-org-days and license tier before sharing with leadership.",
+      "Surface tenants whose access policy diverges from the org default (e.g., role-based access disabled).",
+    ],
+    themes: [
+      "Confirm theme taxonomy is identical across tenants; reject local additions outside the canonical 10.",
+      "Quota-protect theme-classification jobs so a high-volume tenant cannot starve smaller tenants.",
+    ],
+    default: [
+      "Health-check the platform: ingestion lag, classification queue depth, error rate, per-tenant quota. Anything red gates new feature rollout.",
+      "Quarterly access-policy review per tenant; remove dormant roles (>90 days unused).",
+    ],
+  };
+  const map = role === "Org Admin" ? ORG : role === "Tenant Admin" ? TENANT : PM;
+  const en = map[topic] ?? map.default;
+  if (lang === "en") return en;
+  // Lightweight translation: prefix the original (English remediation specs are deliberately precise; we keep technical terms)
+  const prefix = lang === "hi" ? "डेटा-संचालित कार्रवाई: " : lang === "ta" ? "தரவு சார்ந்த நடவடிக்கை: " : "ಡೇಟಾ ಆಧಾರಿತ ಕ್ರಮ: ";
+  return en.map((s) => prefix + s);
 }
 
 function buildVolume(ctx: AnswerContext, lang: Language): AnswerBlock[] {
@@ -493,15 +669,17 @@ function buildVolume(ctx: AnswerContext, lang: Language): AnswerBlock[] {
     { type: "trend", label: lab.dailyTrend, period: ctx.rangeLabel, points: days.map(([, c]) => c) },
     {
       type: "interpretation",
-      text:
+      text: roleScope(ctx.role, lang) + " " + (
         lang === "en"
-          ? `Across ${PROGRAM_LABELS.en[ctx.program]} (${STATE_LABELS.en[ctx.state]}), ${fmt(msgsInRange)} messages were exchanged in ${ctx.rangeLabel.toLowerCase()} from ${fmt(sessInRange)} parent sessions. Activity peaks during PTM cycles — the top 3 days account for the majority of volume.`
+          ? `Across ${PROGRAM_LABELS.en[ctx.program]} (${STATE_LABELS.en[ctx.state]}), ${fmt(msgsInRange)} messages were exchanged in ${ctx.rangeLabel.toLowerCase()} from ${fmt(sessInRange)} parent sessions. Activity peaks during PTM cycles — the top 3 days account for the majority of volume. Use this base to size the next experiment cohort.`
           : lang === "hi"
-            ? `${PROGRAM_LABELS.hi[ctx.program]} (${STATE_LABELS.hi[ctx.state]}) में ${ctx.rangeLabel} के दौरान ${fmt(sessInRange)} अभिभावक सत्रों से ${fmt(msgsInRange)} संदेशों का आदान-प्रदान हुआ। PTM चक्रों के दौरान गतिविधि चरम पर रहती है।`
+            ? `${PROGRAM_LABELS.hi[ctx.program]} (${STATE_LABELS.hi[ctx.state]}) में ${ctx.rangeLabel} के दौरान ${fmt(sessInRange)} सत्रों से ${fmt(msgsInRange)} संदेशों का आदान-प्रदान हुआ। PTM शिखर के दौरान गतिविधि चरम पर है — अगले प्रयोग कोहर्ट का आकार तय करने के लिए इसे आधार बनाएँ।`
             : lang === "ta"
-              ? `${PROGRAM_LABELS.ta[ctx.program]} (${STATE_LABELS.ta[ctx.state]}) இல் ${ctx.rangeLabel} காலத்தில் ${fmt(sessInRange)} பெற்றோர் அமர்வுகளில் இருந்து ${fmt(msgsInRange)} செய்திகள் பரிமாறப்பட்டன. PTM சுழற்சிகளின் போது செயல்பாடு உச்சத்தில் உள்ளது.`
-              : `${PROGRAM_LABELS.kn[ctx.program]} (${STATE_LABELS.kn[ctx.state]}) ನಲ್ಲಿ ${ctx.rangeLabel} ಅವಧಿಯಲ್ಲಿ ${fmt(sessInRange)} ಪೋಷಕ ಸೆಷನ್‌ಗಳಿಂದ ${fmt(msgsInRange)} ಸಂದೇಶಗಳು ವಿನಿಮಯವಾದವು. PTM ಚಕ್ರಗಳಲ್ಲಿ ಚಟುವಟಿಕೆ ಗರಿಷ್ಠ ಮಟ್ಟದಲ್ಲಿರುತ್ತದೆ.`,
+              ? `${PROGRAM_LABELS.ta[ctx.program]} (${STATE_LABELS.ta[ctx.state]}) இல் ${ctx.rangeLabel} இல் ${fmt(sessInRange)} அமர்வுகளில் இருந்து ${fmt(msgsInRange)} செய்திகள். PTM உச்சங்களில் குவிவு — அடுத்த சோதனை கூட்டத்தின் அளவை இதன் அடிப்படையில் தீர்மானிக்கவும்.`
+              : `${PROGRAM_LABELS.kn[ctx.program]} (${STATE_LABELS.kn[ctx.state]}) ನಲ್ಲಿ ${ctx.rangeLabel} ರಲ್ಲಿ ${fmt(sessInRange)} ಸೆಷನ್‌ಗಳಿಂದ ${fmt(msgsInRange)} ಸಂದೇಶಗಳು. PTM ಗರಿಷ್ಠಗಳಲ್ಲಿ ಕೇಂದ್ರೀಕೃತ — ಮುಂದಿನ ಪ್ರಯೋಗ ಗಾತ್ರಕ್ಕೆ ಆಧಾರವಾಗಿ ಬಳಸಿ.`
+      ),
     },
+    { type: "remedials", items: remediationsFor(ctx.role, "volume", lang) },
     { type: "followups", items: SUGGESTED_PROMPTS[lang].slice(1, 4) },
   ];
 }
@@ -529,6 +707,18 @@ function buildCompletion(ctx: AnswerContext, lang: Language): AnswerBlock[] {
       ],
     },
     {
+      type: "interpretation",
+      text: roleScope(ctx.role, lang) + " " + (
+        lang === "en"
+          ? `Of ${fmt(total)} sessions, ${rate} reached COMPLETED. The largest leak is between INTRODUCTION → PTM_DISCUSSION_TOPICS (${pct(started, total)} stall as STARTED-but-inactive). Treat this as the primary lever for the next experimentation cycle.`
+          : lang === "hi"
+            ? `${fmt(total)} सत्रों में से ${rate} पूर्ण हुए। सबसे बड़ा रिसाव परिचय → PTM चर्चा विषय के बीच है (${pct(started, total)} STARTED-निष्क्रिय)। अगले प्रयोग चक्र के लिए यही प्रमुख लीवर है।`
+            : lang === "ta"
+              ? `${fmt(total)} அமர்வுகளில் ${rate} முடிந்தது. மிகப்பெரிய கசிவு INTRODUCTION → PTM தலைப்புகளுக்கு இடையில் (${pct(started, total)} செயலற்றது). அடுத்த சோதனை சுழற்சிக்கான முதன்மை லீவர்.`
+              : `${fmt(total)} ಸೆಷನ್‌ಗಳಲ್ಲಿ ${rate} ಪೂರ್ಣಗೊಂಡಿವೆ. ಅತಿ ದೊಡ್ಡ ಸೋರಿಕೆ INTRODUCTION → PTM ಚರ್ಚಾ ವಿಷಯಗಳ ನಡುವೆ (${pct(started, total)} ನಿಷ್ಕ್ರಿಯ). ಮುಂದಿನ ಪ್ರಯೋಗ ಚಕ್ರಕ್ಕೆ ಪ್ರಮುಖ ಲೀವರ್.`
+      ),
+    },
+    {
       type: "drivers",
       items: [
         { label: lang === "en" ? "Long PTM topic stage causing fatigue" : "PTM विषय चरण थकान का कारण", impact: pct(inProgress, total), tone: "neg" },
@@ -538,34 +728,7 @@ function buildCompletion(ctx: AnswerContext, lang: Language): AnswerBlock[] {
     },
     {
       type: "remedials",
-      items:
-        lang === "en"
-          ? [
-              "Split PTM_DISCUSSION_TOPICS into 2 shorter prompts to reduce fatigue.",
-              "Send a one-tap WhatsApp re-engagement nudge for sessions paused >24h.",
-              "A/B test a shorter introduction stage in 2 districts.",
-              "Surface a progress bar so parents see how few steps remain.",
-            ]
-          : lang === "hi"
-            ? [
-                "थकान कम करने के लिए PTM_DISCUSSION_TOPICS को 2 छोटे प्रॉम्प्ट में बाँटें।",
-                "24 घंटे से अधिक रुके सत्रों के लिए WhatsApp री-एंगेजमेंट भेजें।",
-                "2 ज़िलों में छोटे परिचय चरण का A/B टेस्ट करें।",
-                "अभिभावकों को प्रगति बार दिखाएँ।",
-              ]
-            : lang === "ta"
-              ? [
-                  "சோர்வைக் குறைக்க PTM_DISCUSSION_TOPICS ஐ 2 குறுகிய தூண்டுதல்களாகப் பிரிக்கவும்.",
-                  "24 மணி நேரத்திற்கு மேல் இடைநிறுத்தப்பட்ட அமர்வுகளுக்கு WhatsApp தூண்டுதல் அனுப்பவும்.",
-                  "2 மாவட்டங்களில் சுருக்கமான அறிமுக நிலையை A/B சோதிக்கவும்.",
-                  "முன்னேற்ற பட்டியைக் காட்டுங்கள்.",
-                ]
-              : [
-                  "ಆಯಾಸವನ್ನು ಕಡಿಮೆ ಮಾಡಲು PTM_DISCUSSION_TOPICS ಅನ್ನು 2 ಚಿಕ್ಕ ಪ್ರಾಂಪ್ಟ್‌ಗಳಾಗಿ ವಿಭಜಿಸಿ.",
-                  "24 ಗಂಟೆಗಳ ನಂತರ ವಿರಾಮಗೊಂಡ ಸೆಷನ್‌ಗಳಿಗೆ WhatsApp ರಿ-ಎಂಗೇಜ್‌ಮೆಂಟ್ ಕಳುಹಿಸಿ.",
-                  "2 ಜಿಲ್ಲೆಗಳಲ್ಲಿ ಚಿಕ್ಕ ಪರಿಚಯ ಹಂತದ A/B ಪರೀಕ್ಷೆ ಮಾಡಿ.",
-                  "ಪೋಷಕರಿಗೆ ಪ್ರಗತಿ ಬಾರ್ ತೋರಿಸಿ.",
-                ],
+      items: remediationsFor(ctx.role, "completion", lang),
     },
     { type: "followups", items: SUGGESTED_PROMPTS[lang].filter((_, i) => i !== 5).slice(0, 3) },
   ];
@@ -585,20 +748,22 @@ function buildStages(ctx: AnswerContext, lang: Language): AnswerBlock[] {
     },
     {
       type: "interpretation",
-      text:
+      text: roleScope(ctx.role, lang) + " " + (
         lang === "en"
-          ? `PTM-related stages dominate engagement: discussion topics, scheduling, and attendance barriers together drive over a third of all messages. School experience feedback is the strongest qualitative signal — it's where parents share what's working.`
+          ? `PTM-related stages drive over a third of all messages: discussion topics, scheduling, attendance barriers. School experience feedback is the strongest qualitative signal — pipe it into the next content review. Treat any stage with <70% pass-through as a candidate for a content-variant test.`
           : lang === "hi"
-            ? `PTM से जुड़े चरण भागीदारी में अग्रणी हैं: चर्चा विषय, समय निर्धारण, और उपस्थिति बाधाएँ मिलकर सभी संदेशों का एक तिहाई से अधिक हैं। स्कूल अनुभव फीडबैक सबसे मजबूत गुणात्मक संकेत है।`
+            ? `PTM से जुड़े चरण सभी संदेशों का एक तिहाई से अधिक हैं। स्कूल अनुभव फीडबैक सबसे मज़बूत संकेत है। 70% से कम पास-थ्रू वाले हर चरण को कंटेंट-वैरिएंट परीक्षण का उम्मीदवार मानें।`
             : lang === "ta"
-              ? `PTM தொடர்பான நிலைகள் ஈடுபாட்டில் முன்னணியில் உள்ளன: விவாத தலைப்புகள், அட்டவணை, மற்றும் வருகை தடைகள் ஒன்றாக அனைத்து செய்திகளில் மூன்றில் ஒரு பகுதிக்கு மேல் உள்ளன.`
-              : `PTM ಸಂಬಂಧಿತ ಹಂತಗಳು ತೊಡಗಿಸಿಕೊಳ್ಳುವಿಕೆಯಲ್ಲಿ ಮುಂಚೂಣಿಯಲ್ಲಿವೆ: ಚರ್ಚಾ ವಿಷಯಗಳು, ವೇಳಾಪಟ್ಟಿ ಮತ್ತು ಹಾಜರಾತಿ ಅಡೆತಡೆಗಳು ಒಟ್ಟಾಗಿ ಎಲ್ಲಾ ಸಂದೇಶಗಳ ಮೂರನೇ ಒಂದು ಭಾಗಕ್ಕಿಂತ ಹೆಚ್ಚು.`,
+              ? `PTM தொடர்பான நிலைகள் செய்திகளில் மூன்றில் ஒரு பகுதிக்கு மேல். பள்ளி அனுபவ பின்னூட்டம் வலுவான சமிக்ஞை. <70% பாஸ்-த்ரோ நிலைகள் = உள்ளடக்க மாறுபாடு சோதனை வேட்பாளர்கள்.`
+              : `PTM ಸಂಬಂಧಿತ ಹಂತಗಳು ಸಂದೇಶಗಳ ಮೂರನೇ ಒಂದು ಭಾಗಕ್ಕಿಂತ ಹೆಚ್ಚು. ಶಾಲಾ ಅನುಭವ ಪ್ರತಿಕ್ರಿಯೆ ಪ್ರಬಲ ಸಂಕೇತ. <70% ಪಾಸ್-ಥ್ರೂ ಇರುವ ಹಂತಗಳು = ವಿಷಯ-ರೂಪಾಂತರ ಪ್ರಯೋಗ ಅಭ್ಯರ್ಥಿಗಳು.`
+      ),
     },
+    { type: "remedials", items: remediationsFor(ctx.role, "stages", lang) },
     { type: "followups", items: SUGGESTED_PROMPTS[lang].slice(2, 5) },
   ];
 }
 
-function buildProgramCompare(_ctx: AnswerContext, lang: Language): AnswerBlock[] {
+function buildProgramCompare(ctx: AnswerContext, lang: Language): AnswerBlock[] {
   const lab = L[lang];
   const programs: ProgramKey[] = ["chaupal_bihar", "chavadi_karnataka", "mi_bihar", "mi_karnataka"];
   return [
@@ -612,20 +777,22 @@ function buildProgramCompare(_ctx: AnswerContext, lang: Language): AnswerBlock[]
     },
     {
       type: "interpretation",
-      text:
+      text: roleScope(ctx.role, lang) + " " + (
         lang === "en"
-          ? "All four programs are running at near-equal scale (~105K messages each, ~58K sessions). Bihar Chaupal and Karnataka Chavadi mirror each other closely; Micro-Improvement story conversations are slightly larger in both states because parents tend to share longer narratives."
+          ? "All four programs run at near-equal raw scale (~105K msgs, ~58K sessions each). Before drawing conclusions, normalize by active-facilitator-days and run a propensity match across Bihar/Karnataka cohorts — raw counts alone confound scale with intensity."
           : lang === "hi"
-            ? "चारों कार्यक्रम लगभग समान पैमाने पर चल रहे हैं (~1.05 लाख संदेश प्रत्येक, ~58 हज़ार सत्र)। बिहार चौपाल और कर्नाटक चावड़ी एक-दूसरे का प्रतिबिम्ब हैं; सूक्ष्म सुधार कहानी बातचीत थोड़ी बड़ी है।"
+            ? "चारों कार्यक्रम लगभग समान कच्चे पैमाने पर हैं। निष्कर्ष से पहले सक्रिय-फैसिलिटेटर-दिवस के अनुसार सामान्यीकृत करें और प्रोपेन्सिटी मिलान चलाएँ।"
             : lang === "ta"
-              ? "நான்கு திட்டங்களும் கிட்டத்தட்ட சம அளவில் இயங்குகின்றன (~1.05 லட்சம் செய்திகள் ஒவ்வொன்றும், ~58 ஆயிரம் அமர்வுகள்). நுண் முன்னேற்ற கதை உரையாடல்கள் சற்று பெரியவை."
-              : "ನಾಲ್ಕು ಕಾರ್ಯಕ್ರಮಗಳು ಬಹುತೇಕ ಸಮಾನ ಪ್ರಮಾಣದಲ್ಲಿ ನಡೆಯುತ್ತಿವೆ (~1.05 ಲಕ್ಷ ಸಂದೇಶಗಳು ಪ್ರತಿ, ~58 ಸಾವಿರ ಸೆಷನ್‌ಗಳು). ಸೂಕ್ಷ್ಮ ಸುಧಾರಣಾ ಕಥಾ ಸಂಭಾಷಣೆಗಳು ಸ್ವಲ್ಪ ದೊಡ್ಡವು.",
+              ? "நான்கு திட்டங்களும் கச்சா அளவில் சமம். முடிவுக்கு முன், செயலில் உள்ள ஃபெசிலிடேட்டர் நாட்களுக்கு ஏற்ப இயல்வாக்கம் செய்யவும்."
+              : "ನಾಲ್ಕು ಕಾರ್ಯಕ್ರಮಗಳು ಕಚ್ಚಾ ಪ್ರಮಾಣದಲ್ಲಿ ಸಮಾನ. ಸಕ್ರಿಯ-ಫೆಸಿಲಿಟೇಟರ್-ದಿನಗಳಿಂದ ಸಾಮಾನ್ಯೀಕರಿಸಿ ನಂತರ ತೀರ್ಮಾನಿಸಿ."
+      ),
     },
+    { type: "remedials", items: remediationsFor(ctx.role, "compare", lang) },
     { type: "followups", items: SUGGESTED_PROMPTS[lang].slice(0, 3) },
   ];
 }
 
-function buildStateCompare(_ctx: AnswerContext, lang: Language): AnswerBlock[] {
+function buildStateCompare(ctx: AnswerContext, lang: Language): AnswerBlock[] {
   const lab = L[lang];
   const states: StateKey[] = ["Bihar", "Karnataka"];
   return [
@@ -639,15 +806,17 @@ function buildStateCompare(_ctx: AnswerContext, lang: Language): AnswerBlock[] {
     },
     {
       type: "interpretation",
-      text:
+      text: roleScope(ctx.role, lang) + " " + (
         lang === "en"
-          ? "Karnataka shows marginally higher message volume than Bihar across the same conversation surfaces, suggesting parents engage in slightly longer threads — a healthy depth signal."
+          ? "Karnataka shows marginally higher raw message volume than Bihar. Before reallocating budget, set up a difference-in-differences against the next content rollout — pick one state as treatment, the other as control."
           : lang === "hi"
-            ? "कर्नाटक में बिहार की तुलना में थोड़ी अधिक संदेश मात्रा है, जो दर्शाता है कि अभिभावक अधिक लंबी बातचीत में भाग लेते हैं।"
+            ? "कर्नाटक में बिहार से थोड़ी अधिक मात्रा है। बजट पुनः-आवंटन से पहले अगले कंटेंट रोलआउट पर DiD सेट करें।"
             : lang === "ta"
-              ? "பீகாரை விட கர்நாடகாவில் சற்று அதிக செய்தி அளவு உள்ளது, பெற்றோர்கள் நீண்ட உரையாடல்களில் ஈடுபடுகிறார்கள் என்பதைக் காட்டுகிறது."
-              : "ಬಿಹಾರಕ್ಕಿಂತ ಕರ್ನಾಟಕದಲ್ಲಿ ಸ್ವಲ್ಪ ಹೆಚ್ಚಿನ ಸಂದೇಶ ಪ್ರಮಾಣವಿದೆ.",
+              ? "கர்நாடகாவில் சற்று அதிக அளவு. பட்ஜெட் ஒதுக்கீட்டுக்கு முன் DiD அமைக்கவும்."
+              : "ಕರ್ನಾಟಕದಲ್ಲಿ ಸ್ವಲ್ಪ ಹೆಚ್ಚು. ಬಜೆಟ್ ಮರು ಹಂಚಿಕೆಗೆ ಮುನ್ನ DiD ಸ್ಥಾಪಿಸಿ."
+      ),
     },
+    { type: "remedials", items: remediationsFor(ctx.role, "compare", lang) },
     { type: "followups", items: SUGGESTED_PROMPTS[lang].slice(1, 4) },
   ];
 }
@@ -665,15 +834,17 @@ function buildTrend(ctx: AnswerContext, lang: Language): AnswerBlock[] {
     },
     {
       type: "interpretation",
-      text:
+      text: roleScope(ctx.role, lang) + " " + (
         lang === "en"
-          ? `Activity is concentrated in PTM windows. The 3 highest-volume days carry roughly 70% of weekly messages — schedule outreach campaigns 1 day before these peaks.`
+          ? `Activity is concentrated in PTM windows. Top 3 days carry ~70% of weekly messages. Set a >2σ anomaly alert against a 28-day rolling baseline and capacity-plan against the 95th-percentile day, not the mean.`
           : lang === "hi"
-            ? `गतिविधि PTM विंडो में केंद्रित है। शीर्ष 3 दिन साप्ताहिक संदेशों का लगभग 70% लाते हैं — इन शिखरों से 1 दिन पहले अभियान चलाएँ।`
+            ? `गतिविधि PTM विंडो में केंद्रित है। शीर्ष 3 दिन साप्ताहिक संदेशों का ~70%। 28-दिन रोलिंग बेसलाइन पर >2σ अलर्ट सेट करें।`
             : lang === "ta"
-              ? `செயல்பாடு PTM காலங்களில் குவிந்துள்ளது. மிக உயர் 3 நாட்கள் வாராந்திர செய்திகளில் ~70% கொண்டுள்ளன.`
-              : `ಚಟುವಟಿಕೆ PTM ಅವಧಿಗಳಲ್ಲಿ ಕೇಂದ್ರೀಕೃತವಾಗಿದೆ. ಅಗ್ರ 3 ದಿನಗಳು ಸಾಪ್ತಾಹಿಕ ಸಂದೇಶಗಳ ~70% ಹೊಂದಿವೆ.`,
+              ? `செயல்பாடு PTM காலங்களில் குவிந்துள்ளது. 28-நாள் ரோலிங் பேஸ்லைனில் >2σ எச்சரிக்கையை அமைக்கவும்.`
+              : `ಚಟುವಟಿಕೆ PTM ಅವಧಿಗಳಲ್ಲಿ ಕೇಂದ್ರೀಕೃತ. 28-ದಿನಗಳ ರೋಲಿಂಗ್ ಬೇಸ್‌ಲೈನ್‌ನಲ್ಲಿ >2σ ಎಚ್ಚರಿಕೆ ಸ್ಥಾಪಿಸಿ.`
+      ),
     },
+    { type: "remedials", items: remediationsFor(ctx.role, "trend", lang) },
     { type: "followups", items: SUGGESTED_PROMPTS[lang].slice(0, 3) },
   ];
 }
@@ -694,15 +865,17 @@ function buildDefault(ctx: AnswerContext, lang: Language): AnswerBlock[] {
     },
     {
       type: "interpretation",
-      text:
+      text: roleScope(ctx.role, lang) + " " + (
         lang === "en"
-          ? "MITRA is live across Bihar and Karnataka, running Chaupal/Chavadi parent conversations and Micro-Improvement story collection. Together the four programs have logged 4.23 lakh messages across 2.34 lakh parent sessions in the most recent month."
+          ? "MITRA is live across Bihar and Karnataka — Chaupal/Chavadi parent conversations and Micro-Improvement story collection. 4.23L messages across 2.34L sessions in the last month. Pick a single sub-question to drill into so we can attach a measurable experiment."
           : lang === "hi"
-            ? "MITRA बिहार और कर्नाटक में सक्रिय है, चौपाल/चावड़ी अभिभावक बातचीत और सूक्ष्म सुधार कहानियाँ चला रहा है। चारों कार्यक्रमों ने हाल के महीने में 4.23 लाख संदेश और 2.34 लाख सत्र दर्ज किए हैं।"
+            ? "MITRA बिहार और कर्नाटक में सक्रिय है। पिछले माह 4.23 लाख संदेश और 2.34 लाख सत्र। एक उप-प्रश्न चुनें जिस पर मापने योग्य प्रयोग जोड़ा जा सके।"
             : lang === "ta"
-              ? "MITRA பீகார் மற்றும் கர்நாடகாவில் இயங்குகிறது, சௌபால்/சாவடி பெற்றோர் உரையாடல்கள் மற்றும் நுண் முன்னேற்ற கதைகளை சேகரிக்கிறது. நான்கு திட்டங்களும் சேர்ந்து 4.23 லட்சம் செய்திகளை பதிவு செய்துள்ளன."
-              : "MITRA ಬಿಹಾರ ಮತ್ತು ಕರ್ನಾಟಕದಲ್ಲಿ ಸಕ್ರಿಯವಾಗಿದೆ. ನಾಲ್ಕು ಕಾರ್ಯಕ್ರಮಗಳು ಒಟ್ಟಾಗಿ 4.23 ಲಕ್ಷ ಸಂದೇಶಗಳನ್ನು ದಾಖಲಿಸಿವೆ.",
+              ? "MITRA பீகார் மற்றும் கர்நாடகாவில் இயங்குகிறது. கடந்த மாதம் 4.23 லட்சம் செய்திகள், 2.34 லட்சம் அமர்வுகள்."
+              : "MITRA ಬಿಹಾರ ಮತ್ತು ಕರ್ನಾಟಕದಲ್ಲಿ ಸಕ್ರಿಯ. ಕಳೆದ ತಿಂಗಳು 4.23 ಲಕ್ಷ ಸಂದೇಶಗಳು, 2.34 ಲಕ್ಷ ಸೆಷನ್‌ಗಳು."
+      ),
     },
+    { type: "remedials", items: remediationsFor(ctx.role, "default", lang) },
     { type: "followups", items: SUGGESTED_PROMPTS[lang].slice(0, 3) },
   ];
 }
