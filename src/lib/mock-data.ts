@@ -865,15 +865,17 @@ function buildDefault(ctx: AnswerContext, lang: Language): AnswerBlock[] {
     },
     {
       type: "interpretation",
-      text:
+      text: roleScope(ctx.role, lang) + " " + (
         lang === "en"
-          ? "MITRA is live across Bihar and Karnataka, running Chaupal/Chavadi parent conversations and Micro-Improvement story collection. Together the four programs have logged 4.23 lakh messages across 2.34 lakh parent sessions in the most recent month."
+          ? "MITRA is live across Bihar and Karnataka — Chaupal/Chavadi parent conversations and Micro-Improvement story collection. 4.23L messages across 2.34L sessions in the last month. Pick a single sub-question to drill into so we can attach a measurable experiment."
           : lang === "hi"
-            ? "MITRA बिहार और कर्नाटक में सक्रिय है, चौपाल/चावड़ी अभिभावक बातचीत और सूक्ष्म सुधार कहानियाँ चला रहा है। चारों कार्यक्रमों ने हाल के महीने में 4.23 लाख संदेश और 2.34 लाख सत्र दर्ज किए हैं।"
+            ? "MITRA बिहार और कर्नाटक में सक्रिय है। पिछले माह 4.23 लाख संदेश और 2.34 लाख सत्र। एक उप-प्रश्न चुनें जिस पर मापने योग्य प्रयोग जोड़ा जा सके।"
             : lang === "ta"
-              ? "MITRA பீகார் மற்றும் கர்நாடகாவில் இயங்குகிறது, சௌபால்/சாவடி பெற்றோர் உரையாடல்கள் மற்றும் நுண் முன்னேற்ற கதைகளை சேகரிக்கிறது. நான்கு திட்டங்களும் சேர்ந்து 4.23 லட்சம் செய்திகளை பதிவு செய்துள்ளன."
-              : "MITRA ಬಿಹಾರ ಮತ್ತು ಕರ್ನಾಟಕದಲ್ಲಿ ಸಕ್ರಿಯವಾಗಿದೆ. ನಾಲ್ಕು ಕಾರ್ಯಕ್ರಮಗಳು ಒಟ್ಟಾಗಿ 4.23 ಲಕ್ಷ ಸಂದೇಶಗಳನ್ನು ದಾಖಲಿಸಿವೆ.",
+              ? "MITRA பீகார் மற்றும் கர்நாடகாவில் இயங்குகிறது. கடந்த மாதம் 4.23 லட்சம் செய்திகள், 2.34 லட்சம் அமர்வுகள்."
+              : "MITRA ಬಿಹಾರ ಮತ್ತು ಕರ್ನಾಟಕದಲ್ಲಿ ಸಕ್ರಿಯ. ಕಳೆದ ತಿಂಗಳು 4.23 ಲಕ್ಷ ಸಂದೇಶಗಳು, 2.34 ಲಕ್ಷ ಸೆಷನ್‌ಗಳು."
+      ),
     },
+    { type: "remedials", items: remediationsFor(ctx.role, "default", lang) },
     { type: "followups", items: SUGGESTED_PROMPTS[lang].slice(0, 3) },
   ];
 }
