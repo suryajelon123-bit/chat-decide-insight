@@ -499,10 +499,12 @@ export type AnswerContext = {
   state: StateKey;
   rangeKey: string;
   rangeLabel: string;
+  role: Role;
 };
 
 function makeSource(ctx: AnswerContext, lang: Language, m: Metrics): Source {
   const filters: string[] = [];
+  filters.push(`${UI[lang].role} = ${ctx.role}`);
   filters.push(`${UI[lang].program} = ${PROGRAM_LABELS[lang][ctx.program]}`);
   filters.push(`${UI[lang].state} = ${STATE_LABELS[lang][ctx.state]}`);
   return {
@@ -511,6 +513,147 @@ function makeSource(ctx: AnswerContext, lang: Language, m: Metrics): Source {
     timeRange: ctx.rangeLabel,
     rows: m.total_msgs,
   };
+}
+
+// ---------------- Role lens: who decides what ----------------
+// Program Manager: operational dials (cohorts, content variants, facilitator deployment, sample-size driven experiments)
+// Org Admin:       cross-program rollups, SLAs, data quality, escalations, capacity planning
+// Tenant Admin:    multi-tenant governance, access policies, data residency, platform health, billing/quota
+function roleScope(role: Role, lang: Language): string {
+  const en = {
+    "Program Manager": "Program Manager view — focus on cohort experiments, facilitator deployment, and content-variant decisions.",
+    "Org Admin": "Org Admin view — focus on cross-program SLAs, data-quality gates, and capacity reallocation across states.",
+    "Tenant Admin": "Tenant Admin view — focus on tenant-level governance, access policies, telemetry health, and quota planning.",
+  } as const;
+  const hi = {
+    "Program Manager": "कार्यक्रम प्रबंधक दृष्टि — कोहर्ट प्रयोग, फैसिलिटेटर नियुक्ति, और कंटेंट वैरिएंट निर्णय।",
+    "Org Admin": "ऑर्ग एडमिन दृष्टि — कार्यक्रमों में SLA, डेटा-गुणवत्ता गेट, राज्यों में क्षमता पुनः-आवंटन।",
+    "Tenant Admin": "टेनेंट एडमिन दृष्टि — टेनेंट गवर्नेंस, एक्सेस नीतियाँ, टेलीमेट्री स्वास्थ्य, और कोटा योजना।",
+  } as const;
+  const ta = {
+    "Program Manager": "திட்ட மேலாளர் பார்வை — கூட்டப் பரிசோதனைகள், எளிமைப்படுத்துநர் ஒதுக்கீடு, உள்ளடக்க மாறுபாடு முடிவுகள்.",
+    "Org Admin": "ஒர்க் நிர்வாகி பார்வை — திட்டங்கள் முழுவதும் SLA, தரவுத் தரக் கட்டுப்பாடுகள், மாநில திறன் மறுஒதுக்கீடு.",
+    "Tenant Admin": "டெனண்ட் நிர்வாகி பார்வை — டெனண்ட் ஆளுகை, அணுகல் கொள்கைகள், தொலைஅளவு ஆரோக்கியம், ஒதுக்கீட்டு திட்டமிடல்.",
+  } as const;
+  const kn = {
+    "Program Manager": "ಕಾರ್ಯಕ್ರಮ ವ್ಯವಸ್ಥಾಪಕ ನೋಟ — ಕೋಹೋರ್ಟ್ ಪ್ರಯೋಗಗಳು, ಫೆಸಿಲಿಟೇಟರ್ ನಿಯೋಜನೆ, ವಿಷಯ ರೂಪಾಂತರ ನಿರ್ಧಾರಗಳು.",
+    "Org Admin": "ಆರ್ಗ್ ಅಡ್ಮಿನ್ ನೋಟ — ಕಾರ್ಯಕ್ರಮ-ವ್ಯಾಪಿ SLA, ಡೇಟಾ-ಗುಣಮಟ್ಟ ಗೇಟ್‌ಗಳು, ರಾಜ್ಯ ಸಾಮರ್ಥ್ಯ ಮರು ಹಂಚಿಕೆ.",
+    "Tenant Admin": "ಟೆನೆಂಟ್ ಅಡ್ಮಿನ್ ನೋಟ — ಟೆನೆಂಟ್ ಆಡಳಿತ, ಪ್ರವೇಶ ನೀತಿಗಳು, ಟೆಲಿಮೆಟ್ರಿ ಆರೋಗ್ಯ, ಕೋಟಾ ಯೋಜನೆ.",
+  } as const;
+  return ({ en, hi, ta, kn } as const)[lang][role];
+}
+
+// ---------------- Data-driven remediation library ----------------
+// Outputs experiment specs (hypothesis · variant · sample size · primary metric · MDE · guardrail)
+// rather than UX cosmetics. Tailored per role and per intent.
+type Topic = "completion" | "stages" | "trend" | "volume" | "compare" | "themes" | "default";
+
+function remediationsFor(role: Role, topic: Topic, lang: Language): string[] {
+  const PM: Record<Topic, string[]> = {
+    completion: [
+      "A/B test: split PTM_DISCUSSION_TOPICS into 2 shorter prompts. Control = current; Variant = chunked. n≥1,800/arm, primary = COMPLETED rate, MDE +3pp, 14-day run, guardrail = avg messages/session.",
+      "Cohort experiment: enable a 24-hour WhatsApp re-engagement nudge for PAUSED sessions in 3 randomized districts; compare reactivation rate vs 3 holdout districts.",
+      "Stratify completion by facilitator: flag bottom-quartile facilitators (>15pp below district median, n≥30 sessions) and trigger a structured coaching loop.",
+      "Set a weekly alert when COMPLETED rate drops >5pp WoW at the block level; auto-create a triage ticket with the top 3 drop-off stages.",
+    ],
+    stages: [
+      "Funnel diagnostic: compute stage-to-stage retention; any stage with <70% pass-through becomes a candidate for a content variant test.",
+      "A/B test the lowest-retention stage with 2 alternative phrasings (n≥1,500/arm, MDE +4pp on next-stage entry, 10-day run).",
+      "Quasi-experiment: roll out the winning variant in 1 state and use the other state as a synthetic control; report DiD on completion.",
+      "Add a guardrail metric: drop-off must not increase on adjacent stages by more than 1.5pp before promoting the variant.",
+    ],
+    trend: [
+      "Pre-PTM nudge experiment: send outreach 24h before predicted peak in 50% of blocks (random assignment); measure peak-day session lift vs control.",
+      "Time-series anomaly rule: alert when daily messages deviate >2σ from a 28-day rolling baseline; auto-attach the top 3 stages and likely cause.",
+      "Capacity-plan against the 95th-percentile peak day, not the mean — re-baseline every 4 weeks.",
+    ],
+    volume: [
+      "Run a power calculation before any rollout: with current weekly base, an MDE of +2pp on completion needs ~3,400 sessions/arm.",
+      "Tag every outreach campaign with a UTM-style cohort id so volume lift can be attributed (campaign vs organic vs facilitator-driven).",
+      "Sampling audit: pull a 500-session random sample monthly and verify language detection + stage labels (target ≥97% agreement).",
+    ],
+    compare: [
+      "Difference-in-differences: pick a leading state as treatment, lagging state as control, and measure completion delta after rolling out the next content change.",
+      "Normalize by active-facilitator-days before comparing programs — raw counts mix scale with intensity.",
+      "Build a propensity-matched cohort across Bihar and Karnataka on session-length and stage entry to make program comparisons causal, not just descriptive.",
+    ],
+    themes: [
+      "Tag MI stories to the 10 canonical themes; alert when any theme exceeds 1.5× its 8-week baseline share — that is a signal for a targeted intervention.",
+      "Run a content experiment for the top-2 themes (e.g., Distance, Parental Attitudes): test 2 facilitator scripts, n≥1,200 stories/arm, primary = theme-resolution flag, 21-day run.",
+      "Cross-tab themes × district to identify hot-spots (>2σ above state mean) and prioritize field deployment there.",
+    ],
+    default: [
+      "Stand up a weekly experiment review: every active A/B test reports power, lift, p-value, and guardrail status.",
+      "Adopt a freeze rule: no metric definition changes during an active experiment window.",
+    ],
+  };
+  const ORG: Record<Topic, string[]> = {
+    completion: [
+      "Set an org-level SLA: ≥40% COMPLETED rate per program-state cell; auto-escalate cells under SLA for two consecutive weeks.",
+      "Reallocate facilitator hours from over-capacity blocks (utilization <60%) to under-served blocks (waitlist >2 weeks).",
+      "Mandate a data-quality gate: program-state cells with <90% stage-label coverage are excluded from the org-level KPI until backfilled.",
+    ],
+    stages: [
+      "Standardize the stage taxonomy across Chaupal and Chavadi so cross-program funnels are comparable; deprecate any stage with <0.5% volume.",
+      "Quarterly content audit: any stage with ≥2 underperforming variants is escalated to the content design council.",
+    ],
+    trend: [
+      "Forecast next-quarter session volume per state using a 12-week trailing AR(1) and pre-position field-team capacity ±15% around the forecast.",
+      "Define an org-wide anomaly threshold (>2σ of 28-day baseline) that triggers cross-program review, not just program-level.",
+    ],
+    volume: [
+      "Publish a monthly capacity ratio (sessions per active facilitator per week) by state; investigate cells outside the [P25, P75] band.",
+      "Audit the top 5% of high-volume facilitators for quality drift — high volume without quality erodes the dataset.",
+    ],
+    compare: [
+      "Convert raw program counts into per-1,000-active-facilitator rates before any cross-state board reporting.",
+      "Triangulate program comparisons with a 3-source check (MITRA logs · facilitator reports · field audit) before resourcing decisions.",
+    ],
+    themes: [
+      "Map themes to state-level program priorities; flag any state where the top 3 themes do not match the published focus areas.",
+      "Stand up a quarterly theme council with field, content, and policy leads to reweight remediation budgets.",
+    ],
+    default: [
+      "Publish a single org KPI tree: Reach → Engagement → Completion → Theme-resolution. Every dashboard must roll up to one of these nodes.",
+      "Enforce a metric-definition registry; reject ad-hoc KPIs in board decks.",
+    ],
+  };
+  const TENANT: Record<Topic, string[]> = {
+    completion: [
+      "Validate that each tenant's COMPLETED rate is computed against the same status enum; flag tenants with custom statuses for normalization.",
+      "Set per-tenant ingestion SLOs: <0.5% missing status, <2-hour event-to-warehouse latency; alert on breach.",
+    ],
+    stages: [
+      "Audit tenants for stage-name drift; require a mapping table for any custom stage before it appears in cross-tenant rollups.",
+      "Enforce a schema-version pin per tenant; block rollout of new stages until the schema review passes.",
+    ],
+    trend: [
+      "Track per-tenant API quota consumption against the trend; pre-grant headroom for tenants approaching 80% of quota.",
+      "Watch for telemetry gaps (>4 contiguous low-volume hours) that look like outages, not behavior.",
+    ],
+    volume: [
+      "Per-tenant cost-per-session metric; alert on tenants whose unit cost is >1.5× the platform median.",
+      "Enforce data-residency: confirm Bihar/Karnataka events are written only to the in-region store.",
+    ],
+    compare: [
+      "Normalize cross-tenant comparisons by active-org-days and license tier before sharing with leadership.",
+      "Surface tenants whose access policy diverges from the org default (e.g., role-based access disabled).",
+    ],
+    themes: [
+      "Confirm theme taxonomy is identical across tenants; reject local additions outside the canonical 10.",
+      "Quota-protect theme-classification jobs so a high-volume tenant cannot starve smaller tenants.",
+    ],
+    default: [
+      "Health-check the platform: ingestion lag, classification queue depth, error rate, per-tenant quota. Anything red gates new feature rollout.",
+      "Quarterly access-policy review per tenant; remove dormant roles (>90 days unused).",
+    ],
+  };
+  const map = role === "Org Admin" ? ORG : role === "Tenant Admin" ? TENANT : PM;
+  const en = map[topic] ?? map.default;
+  if (lang === "en") return en;
+  // Lightweight translation: prefix the original (English remediation specs are deliberately precise; we keep technical terms)
+  const prefix = lang === "hi" ? "डेटा-संचालित कार्रवाई: " : lang === "ta" ? "தரவு சார்ந்த நடவடிக்கை: " : "ಡೇಟಾ ಆಧಾರಿತ ಕ್ರಮ: ";
+  return en.map((s) => prefix + s);
 }
 
 function buildVolume(ctx: AnswerContext, lang: Language): AnswerBlock[] {
