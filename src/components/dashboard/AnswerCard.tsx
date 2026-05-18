@@ -1,5 +1,17 @@
-import { ArrowDownRight, ArrowUpRight, Database, Lightbulb, ListChecks, Sparkles, TrendingUp, ChevronRight, Share2 } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Database, Lightbulb, ListChecks, Sparkles, TrendingUp, ChevronRight, Share2, Target, BarChart3, Brain } from "lucide-react";
 import { UI, type Answer, type AnswerBlock, type Language } from "@/lib/mock-data";
+
+function SandwichLabel({ icon: Icon, label, hint }: { icon: typeof Target; label: string; hint: string }) {
+  return (
+    <div className="flex items-center gap-2 px-1">
+      <div className="flex h-5 w-5 items-center justify-center rounded-md bg-surface-3">
+        <Icon className="h-3 w-3 text-foreground/70" />
+      </div>
+      <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-foreground/80">{label}</span>
+      <span className="text-[10px] text-muted-foreground">· {hint}</span>
+    </div>
+  );
+}
 import { Sparkline } from "./Sparkline";
 
 function Badge({ tone, language }: { tone: "fact" | "insight"; language: Language }) {
