@@ -59,6 +59,60 @@ export const MI_THEMES = [
   "Other Factors",
 ] as const;
 
+// -------- THEME KNOWLEDGE BASE (semantic deduplication protocol) --------
+// Each theme rolls many surface phrasings into a single Merged_Concept.
+// Used to classify grassroots feedback and to power the 3-dimension analysis
+// (Mechanism -> Impact -> Systemic) seen in the Themes answer.
+export type ThemeKey =
+  | "poverty" | "documents" | "marriage" | "distance" | "attitudes"
+  | "infra" | "teacher" | "safety" | "substance" | "other" | "emerging";
+
+export const THEME_KB: Record<ThemeKey, {
+  label: string;
+  mergedConcept: string;
+  keywords: string[];           // surface phrasings (multi-lingual where useful)
+  mechanism: string;            // Dim 1: trigger
+  impact: string;               // Dim 2: who is hit first
+  systemic: string;             // Dim 3: pattern
+  share: number;                // baseline % share across MI corpus
+}> = {
+  poverty:   { label: "Poverty and Economic Barriers",      mergedConcept: "Poverty preventing education",                keywords: ["poor","poverty","no money","money","गरीब","पैसा","ஏழ்","பணம்","ಬಡ","ಹಣ","child labour","labour"],                       mechanism: "Households pull children into labour to meet daily income.", impact: "First-born and older girls withdrawn before boys.",          systemic: "Concentrated in cash-crop and migrant-labour blocks.",      share: 22 },
+  documents: { label: "Legal Document-linked Barriers",     mergedConcept: "Lack of legal documentation (Aadhaar)",       keywords: ["aadhar","aadhaar","id","birth certificate","document","आधार","प्रमाण","ஆதார்","ಆಧಾರ್"],                                    mechanism: "Schools deny enrolment without Aadhaar/birth certificate.",  impact: "Migrant and inter-state families are blocked at admission.", systemic: "Documentation drives correlate with enrolment recovery.",    share: 14 },
+  marriage:  { label: "Child Marriage",                     mergedConcept: "Early marriage ending schooling",             keywords: ["child marriage","early marriage","shaadi","बाल विवाह","विवाह","திருமணம்","ಮದುವೆ","bride"],                              mechanism: "Marriage negotiations begin around grade 8-9 for girls.",   impact: "Girls 13-16 exit the funnel and rarely return.",            systemic: "Spikes in specific cultural belts and post-harvest months.", share: 9  },
+  distance:  { label: "Distance and Accessibility Issues",  mergedConcept: "Distance, transport, weather barriers",       keywords: ["far","distance","road","bus","rain","weather","दूर","सड़क","बस","தூரம்","பேருந்து","ದೂರ","ರಸ್ತೆ"],                       mechanism: "No safe last-mile transport; roads cut off in monsoon.",     impact: "Girls and younger children drop attendance during rains.",   systemic: "Hot-spotted in remote tolas and ghat-adjacent panchayats.",  share: 13 },
+  attitudes: { label: "Parental Attitudes & Socio-Cultural",mergedConcept: "Gendered mindsets and domestic-role burden",  keywords: ["mindset","dowry","domestic","household","girls","ladki","लड़की","दहेज","ಹೆಣ್ಣು","attitude"],                              mechanism: "Girls expected to take on caregiving and chores.",          impact: "Adolescent girls' attendance falls below 60%.",              systemic: "Strongest where mothers themselves did not complete grade 10.",share: 11 },
+  infra:     { label: "School Infrastructure & Facility",   mergedConcept: "Missing toilets, water, MDM, books",          keywords: ["toilet","water","mid-day meal","mdm","book","scheme","शौचालय","पानी","மலசலகூடம்","ತೊಠೆಲೆ","building"],                   mechanism: "Lack of functional toilets and clean water deters girls.",   impact: "Adolescent girls and small children most affected.",         systemic: "Correlates with delayed SMC fund disbursement.",             share: 12 },
+  teacher:   { label: "Teacher Capacity & Quality",         mergedConcept: "Teacher shortage and irregular attendance",    keywords: ["teacher","shortage","absent","quality","शिक्षक","ஆசிரியர்","ಶಿಕ್ಷಕ","tlm"],                                              mechanism: "Multi-grade classrooms; teachers stretched across subjects.", impact: "Foundational learning collapses by grade 3.",               systemic: "Vacancy concentrated in tribal and Tier-3 blocks.",          share: 10 },
+  safety:    { label: "Safety Issues",                      mergedConcept: "Harassment and unsafe routes",                keywords: ["safety","harass","unsafe","stray dog","सुरक्षा","छेड़","பாதுகாப்பு","ಸುರಕ್ಷತೆ"],                                          mechanism: "Reports of harassment along the route to school.",          impact: "Adolescent girls are pulled out first.",                     systemic: "Clusters around highway-adjacent and forested routes.",      share: 5  },
+  substance: { label: "Substance Abuse & Addiction",        mergedConcept: "Alcohol, drugs, gambling, mobile addiction",   keywords: ["alcohol","drug","gambling","mobile","addiction","नशा","दारू","போதை","ಮದ್ಯ","screen time"],                                mechanism: "Household substance use diverts income and time.",          impact: "Boys exposed early; girls bear domestic fallout.",          systemic: "Higher in industrial-fringe and toddy-belt panchayats.",     share: 4  },
+  other:     { label: "Other Factors",                      mergedConcept: "Awareness, migration, miscellaneous",         keywords: ["awareness","migration","other","प्रवास","விழிப்புணர்வு","ಜಾಗೃತಿ"],                                                       mechanism: "Mixed signals — keep under 10% or split out a new theme.",   impact: "Risk of masking an emerging issue.",                         systemic: "If share > 10%, escalate to taxonomy review.",               share: 8  },
+  emerging:  { label: "Emerging Trend",                     mergedConcept: "Not in canonical 10 — review for new theme",   keywords: ["new","unusual","emerging","नया","புதிய","ಹೊಸ"],                                                                              mechanism: "Pattern not yet explained by the 10 canonical themes.",      impact: "Decision-impact unknown until investigated.",               systemic: "Trigger a taxonomy review when sustained > 2 weeks.",        share: 0  },
+};
+
+// Abbreviation expansion used in display labels & remediations
+const ABBR: Record<string, string> = {
+  TLM: "TLM (Teaching Learning Materials)",
+  SMC: "SMC (School Management Committee)",
+  PTM: "PTM (Parent-Teacher Meeting)",
+  MDM: "MDM (Mid-Day Meal)",
+  MI:  "MI (Micro-Improvement)",
+};
+export function expandAbbr(s: string): string {
+  return s.replace(/\b(TLM|SMC|PTM|MDM|MI)\b/g, (m) => ABBR[m] ?? m);
+}
+
+// Classify a free-text question to a theme using keyword anchors.
+export function classifyTheme(q: string): ThemeKey | null {
+  const s = q.toLowerCase();
+  let best: { k: ThemeKey; hits: number } | null = null;
+  (Object.keys(THEME_KB) as ThemeKey[]).forEach((k) => {
+    if (k === "emerging") return;
+    const hits = THEME_KB[k].keywords.reduce((a, w) => a + (s.includes(w.toLowerCase()) ? 1 : 0), 0);
+    if (hits && (!best || hits > best.hits)) best = { k, hits };
+  });
+  return best ? best.k : null;
+}
+
 // ---------------- Programs / Filters ----------------
 export type ProgramKey = "all" | "chaupal_bihar" | "chavadi_karnataka" | "mi_bihar" | "mi_karnataka";
 export type StateKey = "all" | "Bihar" | "Karnataka";
