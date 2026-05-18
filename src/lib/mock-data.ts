@@ -465,18 +465,20 @@ function filterDays(byDay: [string, number][], rangeKey: string): [string, numbe
 }
 
 // ---------------- Intent routing ----------------
-type Intent = "volume" | "completion" | "stages" | "compare_program" | "compare_state" | "trend" | "default";
+type Intent = "volume" | "completion" | "stages" | "compare_program" | "compare_state" | "trend" | "themes" | "default";
 function routeIntent(q: string): Intent {
   const s = q.toLowerCase();
   const has = (...k: string[]) => k.some((w) => s.includes(w));
   if (has("complete", "completion", "drop", "drop-off", "dropoff", "abandon", "पूर्ण", "छूट", "முடி", "விலக", "ಪೂರ್ಣ", "ಇಳಿಕ")) return "completion";
-  if (has("stage", "topic", "theme", "discussion", "barrier", "चरण", "विषय", "बाधा", "நிலை", "தலைப்பு", "தடை", "ಹಂತ", "ವಿಷಯ", "ಅಡೆತಡೆ")) return "stages";
-  if (has("compare", "vs", "versus", "bihar vs", "chaupal", "chavadi", "तुलना", "बनाम", "ஒப்பி", "vs", "ಹೋಲಿಸಿ", "vs")) {
+  // Themes (semantic MI classification) — check before generic "stage/topic" routing
+  if (has("theme", "classify", "category", "merged", "dedup", "विषय वर्गीकरण", "வகைப்பாடு", "ವರ್ಗೀಕರಣ") || classifyTheme(q)) return "themes";
+  if (has("stage", "topic", "discussion", "barrier", "चरण", "बाधा", "நிலை", "தலைப்பு", "தடை", "ಹಂತ", "ಅಡೆತಡೆ")) return "stages";
+  if (has("compare", "vs", "versus", "bihar vs", "chaupal", "chavadi", "तुलना", "बनाम", "ஒப்பி", "ಹೋಲಿಸಿ")) {
     if (has("bihar", "karnataka", "बिहार", "कर्नाटक", "பீகார்", "கர்நாடகா", "ಬಿಹಾರ", "ಕರ್ನಾಟಕ", "state", "राज्य", "மாநில", "ರಾಜ್ಯ")) return "compare_state";
     return "compare_program";
   }
   if (has("trend", "daily", "weekly", "over time", "रुझान", "दैनिक", "போக்கு", "தினசரி", "ಪ್ರವೃತ್ತಿ", "ದೈನಂದಿನ")) return "trend";
-  if (has("how many", "count", "total", "engaged", "parent", "session", "message", "कितने", "कुल", "अभिभावक", "एत்தனை", "மொத்த", "ஈடுபாடு", "ಎಷ್ಟು", "ಒಟ್ಟು", "ಪೋಷಕ")) return "volume";
+  if (has("how many", "count", "total", "engaged", "parent", "session", "message", "कितने", "कुल", "अभिभावक", "எத்தனை", "மொத்த", "ஈடுபாடு", "ಎಷ್ಟು", "ಒಟ್ಟು", "ಪೋಷಕ")) return "volume";
   return "default";
 }
 
