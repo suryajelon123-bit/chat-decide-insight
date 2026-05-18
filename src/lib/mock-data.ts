@@ -906,6 +906,93 @@ function buildTrend(ctx: AnswerContext, lang: Language): AnswerBlock[] {
   ];
 }
 
+function buildThemes(ctx: AnswerContext, lang: Language, question: string): AnswerBlock[] {
+  const focused = classifyTheme(question);
+  const allKeys = (Object.keys(THEME_KB) as ThemeKey[]).filter((k) => k !== "emerging");
+  // Synthetic share — anchored on baseline; if a state is filtered, tilt a couple themes.
+  const tilt: Record<ThemeKey, number> = { poverty:0, documents:0, marriage:0, distance:0, attitudes:0, infra:0, teacher:0, safety:0, substance:0, other:0, emerging:0 };
+  if (ctx.state === "Bihar") { tilt.poverty += 4; tilt.documents += 3; tilt.marriage += 2; }
+  if (ctx.state === "Karnataka") { tilt.infra += 3; tilt.teacher += 3; tilt.distance += 2; }
+  const rows = allKeys
+    .map((k) => ({ k, share: THEME_KB[k].share + (tilt[k] ?? 0) }))
+    .sort((a, b) => b.share - a.share);
+  const total = rows.reduce((a, r) => a + r.share, 0);
+  const topKey = (focused ?? rows[0].k) as ThemeKey;
+  const top = THEME_KB[topKey];
+
+  const tLabel = (en: string, hi: string, ta: string, kn: string) =>
+    lang === "hi" ? hi : lang === "ta" ? ta : lang === "kn" ? kn : en;
+
+  // Fact | Trigger | Action — three structured rows, per PDF output spec.
+  const factTriggerAction: AnswerBlock = {
+    type: "breakdown",
+    label: tLabel("Fact · Trigger · Action", "तथ्य · कारण · कार्रवाई", "உண்மை · தூண்டுதல் · நடவடிக்கை", "ಸತ್ಯ · ಪ್ರಚೋದನೆ · ಕ್ರಮ"),
+    rows: [
+      { name: tLabel("Fact", "तथ्य", "உண்மை", "ಸತ್ಯ"),       value: expandAbbr(top.mergedConcept),           delta: `${top.share + (tilt[topKey] ?? 0)}% share`, tone: "pos" },
+      { name: tLabel("Why (Trigger)", "क्यों (कारण)", "ஏன் (காரணம்)", "ಏಕೆ (ಕಾರಣ)"), value: expandAbbr(top.mechanism), tone: "neg" },
+      { name: tLabel("Action (Next Step)", "कार्रवाई (अगला कदम)", "நடவடிக்கை (அடுத்த படி)", "ಕ್ರಮ (ಮುಂದಿನ ಹಂತ)"), value: tLabel(
+        "Run A/B on facilitator script for this theme; n≥1,200 stories/arm; primary = theme-resolution flag; 21-day window.",
+        "इस विषय के लिए फैसिलिटेटर स्क्रिप्ट पर A/B; n≥1,200/आर्म; प्राथमिक = थीम-रिज़ॉल्यूशन फ्लैग; 21 दिन।",
+        "இந்த தலைப்புக்கு ஃபெசிலிடேட்டர் ஸ்கிரிப்டில் A/B; n≥1,200/அர்ம்; முதன்மை = தீம்-தீர்வு கொடி; 21 நாட்கள்.",
+        "ಈ ವಿಷಯಕ್ಕೆ ಫೆಸಿಲಿಟೇಟರ್ ಸ್ಕ್ರಿಪ್ಟ್‌ನಲ್ಲಿ A/B; n≥1,200/ಆರ್ಮ್; ಪ್ರಾಥಮಿಕ = ಥೀಮ್-ಪರಿಹಾರ ಧ್ವಜ; 21 ದಿನಗಳು."
+      ), tone: "pos" },
+    ],
+  };
+
+  // 3-dimension drivers (Mechanism · Impact · Systemic)
+  const dim3: AnswerBlock = {
+    type: "drivers",
+    items: [
+      { label: tLabel("Mechanism", "तंत्र", "செயல்முறை", "ಕಾರ್ಯವಿಧಾನ") + " — " + top.mechanism, impact: "D1", tone: "neg" },
+      { label: tLabel("Impact", "प्रभाव", "தாக்கம்", "ಪ್ರಭಾವ") + " — " + top.impact,             impact: "D2", tone: "neg" },
+      { label: tLabel("Systemic", "व्यवस्थागत", "முறைமையான", "ವ್ಯವಸ್ಥಿತ") + " — " + top.systemic, impact: "D3", tone: "neutral" },
+    ],
+  };
+
+  // Top themes table — post-deduplication shares
+  const topThemes: AnswerBlock = {
+    type: "breakdown",
+    label: tLabel("Top themes (semantic-deduplicated)", "मुख्य विषय (शब्दार्थ-डीडुप)", "முக்கிய தலைப்புகள் (சொல்-டீடப்)", "ಮುಖ್ಯ ವಿಷಯಗಳು (ಸೆಮ್ಯಾಂಟಿಕ್-ಡೀಡಪ್)"),
+    rows: rows.slice(0, 6).map((r) => ({
+      name: THEME_KB[r.k].label + (r.k === topKey ? " ◆" : ""),
+      value: THEME_KB[r.k].mergedConcept,
+      delta: ((r.share / total) * 100).toFixed(1) + "%",
+      tone: r.k === topKey ? "neg" as const : "pos" as const,
+    })),
+  };
+
+  // Emerging-trend guard: if "other" exceeds 10% target, surface it
+  const otherShare = (rows.find((r) => r.k === "other")?.share ?? 0) / total * 100;
+  const emergingNote = otherShare > 10
+    ? tLabel(
+        `"Other" is ${otherShare.toFixed(1)}% (target <10%) — promote a candidate to a new theme via taxonomy review.`,
+        `"अन्य" ${otherShare.toFixed(1)}% (लक्ष्य <10%) — टैक्सोनॉमी समीक्षा में नई थीम बनाएँ।`,
+        `"மற்றவை" ${otherShare.toFixed(1)}% (இலக்கு <10%) — வகைப்பாட்டு மறுபரிசீலனை.`,
+        `"ಇತರ" ${otherShare.toFixed(1)}% (ಗುರಿ <10%) — ವರ್ಗೀಕರಣ ಪರಿಶೀಲನೆ.`
+      )
+    : "";
+
+  const interp: AnswerBlock = {
+    type: "interpretation",
+    text: roleScope(ctx.role, lang) + " " + tLabel(
+      `Top theme: ${top.label} → Merged_Concept: "${top.mergedConcept}". Semantic deduplication collapses surface variants (e.g., "No Aadhaar" + "ID not made") into one strategic concept, so resourcing tracks the underlying issue, not phrasing. ${emergingNote}`,
+      `मुख्य विषय: ${top.label} → मर्ज्ड-कॉन्सेप्ट: "${top.mergedConcept}"। शब्दार्थ डीडुप सतह-वैरिएंट को एक रणनीतिक अवधारणा में मिलाता है। ${emergingNote}`,
+      `முக்கிய தலைப்பு: ${top.label} → ஒன்றிணைந்த கருத்து: "${top.mergedConcept}". ${emergingNote}`,
+      `ಮುಖ್ಯ ವಿಷಯ: ${top.label} → ವಿಲೀನ ಪರಿಕಲ್ಪನೆ: "${top.mergedConcept}". ${emergingNote}`
+    ),
+  };
+
+  return [
+    { type: "kpi", label: tLabel("Active themes", "सक्रिय विषय", "செயலில் உள்ள தலைப்புகள்", "ಸಕ್ರಿಯ ವಿಷಯಗಳು"), value: String(rows.length), delta: tLabel(`Lead: ${top.label}`, `अग्रणी: ${top.label}`, `முன்னணி: ${top.label}`, `ಮುಂಚೂಣಿ: ${top.label}`), deltaDir: "flat" },
+    factTriggerAction,
+    topThemes,
+    dim3,
+    interp,
+    { type: "remedials", items: remediationsFor(ctx.role, "themes", lang) },
+    { type: "followups", items: SUGGESTED_PROMPTS[lang].slice(2, 5) },
+  ];
+}
+
 function buildDefault(ctx: AnswerContext, lang: Language): AnswerBlock[] {
   const m = metricsFor(ctx.program, ctx.state);
   const lab = L[lang];
