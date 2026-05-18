@@ -104,13 +104,14 @@ export function expandAbbr(s: string): string {
 // Classify a free-text question to a theme using keyword anchors.
 export function classifyTheme(q: string): ThemeKey | null {
   const s = q.toLowerCase();
-  let best: { k: ThemeKey; hits: number } | null = null;
+  let bestKey: ThemeKey | null = null;
+  let bestHits = 0;
   (Object.keys(THEME_KB) as ThemeKey[]).forEach((k) => {
     if (k === "emerging") return;
     const hits = THEME_KB[k].keywords.reduce((a, w) => a + (s.includes(w.toLowerCase()) ? 1 : 0), 0);
-    if (hits && (!best || hits > best.hits)) best = { k, hits };
+    if (hits > bestHits) { bestHits = hits; bestKey = k; }
   });
-  return best ? best.k : null;
+  return bestKey;
 }
 
 // ---------------- Programs / Filters ----------------
