@@ -59,6 +59,61 @@ export const MI_THEMES = [
   "Other Factors",
 ] as const;
 
+// -------- THEME KNOWLEDGE BASE (semantic deduplication protocol) --------
+// Each theme rolls many surface phrasings into a single Merged_Concept.
+// Used to classify grassroots feedback and to power the 3-dimension analysis
+// (Mechanism -> Impact -> Systemic) seen in the Themes answer.
+export type ThemeKey =
+  | "poverty" | "documents" | "marriage" | "distance" | "attitudes"
+  | "infra" | "teacher" | "safety" | "substance" | "other" | "emerging";
+
+export const THEME_KB: Record<ThemeKey, {
+  label: string;
+  mergedConcept: string;
+  keywords: string[];           // surface phrasings (multi-lingual where useful)
+  mechanism: string;            // Dim 1: trigger
+  impact: string;               // Dim 2: who is hit first
+  systemic: string;             // Dim 3: pattern
+  share: number;                // baseline % share across MI corpus
+}> = {
+  poverty:   { label: "Poverty and Economic Barriers",      mergedConcept: "Poverty preventing education",                keywords: ["poor","poverty","no money","money","गरीब","पैसा","ஏழ்","பணம்","ಬಡ","ಹಣ","child labour","labour"],                       mechanism: "Households pull children into labour to meet daily income.", impact: "First-born and older girls withdrawn before boys.",          systemic: "Concentrated in cash-crop and migrant-labour blocks.",      share: 22 },
+  documents: { label: "Legal Document-linked Barriers",     mergedConcept: "Lack of legal documentation (Aadhaar)",       keywords: ["aadhar","aadhaar","id","birth certificate","document","आधार","प्रमाण","ஆதார்","ಆಧಾರ್"],                                    mechanism: "Schools deny enrolment without Aadhaar/birth certificate.",  impact: "Migrant and inter-state families are blocked at admission.", systemic: "Documentation drives correlate with enrolment recovery.",    share: 14 },
+  marriage:  { label: "Child Marriage",                     mergedConcept: "Early marriage ending schooling",             keywords: ["child marriage","early marriage","shaadi","बाल विवाह","विवाह","திருமணம்","ಮದುವೆ","bride"],                              mechanism: "Marriage negotiations begin around grade 8-9 for girls.",   impact: "Girls 13-16 exit the funnel and rarely return.",            systemic: "Spikes in specific cultural belts and post-harvest months.", share: 9  },
+  distance:  { label: "Distance and Accessibility Issues",  mergedConcept: "Distance, transport, weather barriers",       keywords: ["far","distance","road","bus","rain","weather","दूर","सड़क","बस","தூரம்","பேருந்து","ದೂರ","ರಸ್ತೆ"],                       mechanism: "No safe last-mile transport; roads cut off in monsoon.",     impact: "Girls and younger children drop attendance during rains.",   systemic: "Hot-spotted in remote tolas and ghat-adjacent panchayats.",  share: 13 },
+  attitudes: { label: "Parental Attitudes & Socio-Cultural",mergedConcept: "Gendered mindsets and domestic-role burden",  keywords: ["mindset","dowry","domestic","household","girls","ladki","लड़की","दहेज","ಹೆಣ್ಣು","attitude"],                              mechanism: "Girls expected to take on caregiving and chores.",          impact: "Adolescent girls' attendance falls below 60%.",              systemic: "Strongest where mothers themselves did not complete grade 10.",share: 11 },
+  infra:     { label: "School Infrastructure & Facility",   mergedConcept: "Missing toilets, water, MDM, books",          keywords: ["toilet","water","mid-day meal","mdm","book","scheme","शौचालय","पानी","மலசலகூடம்","ತೊಠೆಲೆ","building"],                   mechanism: "Lack of functional toilets and clean water deters girls.",   impact: "Adolescent girls and small children most affected.",         systemic: "Correlates with delayed SMC fund disbursement.",             share: 12 },
+  teacher:   { label: "Teacher Capacity & Quality",         mergedConcept: "Teacher shortage and irregular attendance",    keywords: ["teacher","shortage","absent","quality","शिक्षक","ஆசிரியர்","ಶಿಕ್ಷಕ","tlm"],                                              mechanism: "Multi-grade classrooms; teachers stretched across subjects.", impact: "Foundational learning collapses by grade 3.",               systemic: "Vacancy concentrated in tribal and Tier-3 blocks.",          share: 10 },
+  safety:    { label: "Safety Issues",                      mergedConcept: "Harassment and unsafe routes",                keywords: ["safety","harass","unsafe","stray dog","सुरक्षा","छेड़","பாதுகாப்பு","ಸುರಕ್ಷತೆ"],                                          mechanism: "Reports of harassment along the route to school.",          impact: "Adolescent girls are pulled out first.",                     systemic: "Clusters around highway-adjacent and forested routes.",      share: 5  },
+  substance: { label: "Substance Abuse & Addiction",        mergedConcept: "Alcohol, drugs, gambling, mobile addiction",   keywords: ["alcohol","drug","gambling","mobile","addiction","नशा","दारू","போதை","ಮದ್ಯ","screen time"],                                mechanism: "Household substance use diverts income and time.",          impact: "Boys exposed early; girls bear domestic fallout.",          systemic: "Higher in industrial-fringe and toddy-belt panchayats.",     share: 4  },
+  other:     { label: "Other Factors",                      mergedConcept: "Awareness, migration, miscellaneous",         keywords: ["awareness","migration","other","प्रवास","விழிப்புணர்வு","ಜಾಗೃತಿ"],                                                       mechanism: "Mixed signals — keep under 10% or split out a new theme.",   impact: "Risk of masking an emerging issue.",                         systemic: "If share > 10%, escalate to taxonomy review.",               share: 8  },
+  emerging:  { label: "Emerging Trend",                     mergedConcept: "Not in canonical 10 — review for new theme",   keywords: ["new","unusual","emerging","नया","புதிய","ಹೊಸ"],                                                                              mechanism: "Pattern not yet explained by the 10 canonical themes.",      impact: "Decision-impact unknown until investigated.",               systemic: "Trigger a taxonomy review when sustained > 2 weeks.",        share: 0  },
+};
+
+// Abbreviation expansion used in display labels & remediations
+const ABBR: Record<string, string> = {
+  TLM: "TLM (Teaching Learning Materials)",
+  SMC: "SMC (School Management Committee)",
+  PTM: "PTM (Parent-Teacher Meeting)",
+  MDM: "MDM (Mid-Day Meal)",
+  MI:  "MI (Micro-Improvement)",
+};
+export function expandAbbr(s: string): string {
+  return s.replace(/\b(TLM|SMC|PTM|MDM|MI)\b/g, (m) => ABBR[m] ?? m);
+}
+
+// Classify a free-text question to a theme using keyword anchors.
+export function classifyTheme(q: string): ThemeKey | null {
+  const s = q.toLowerCase();
+  let bestKey: ThemeKey | null = null;
+  let bestHits = 0;
+  (Object.keys(THEME_KB) as ThemeKey[]).forEach((k) => {
+    if (k === "emerging") return;
+    const hits = THEME_KB[k].keywords.reduce((a, w) => a + (s.includes(w.toLowerCase()) ? 1 : 0), 0);
+    if (hits > bestHits) { bestHits = hits; bestKey = k; }
+  });
+  return bestKey;
+}
+
 // ---------------- Programs / Filters ----------------
 export type ProgramKey = "all" | "chaupal_bihar" | "chavadi_karnataka" | "mi_bihar" | "mi_karnataka";
 export type StateKey = "all" | "Bihar" | "Karnataka";
@@ -295,6 +350,7 @@ export const UI: Record<Language, UIStrings> = {
 // ---------------- Suggested starter questions ----------------
 export const SUGGESTED_PROMPTS: Record<Language, string[]> = {
   en: [
+    "Classify MI stories by theme (semantic dedup)",
     "How many parents engaged with MITRA so far?",
     "Which stages have the most drop-off?",
     "Compare Bihar Chaupal vs Karnataka Chavadi engagement",
@@ -303,6 +359,7 @@ export const SUGGESTED_PROMPTS: Record<Language, string[]> = {
     "How can we improve conversation completion rate?",
   ],
   hi: [
+    "MI कहानियों को विषय अनुसार वर्गीकृत करें",
     "अब तक कितने अभिभावकों ने MITRA से बातचीत की है?",
     "किन चरणों में सबसे अधिक छूटना हो रहा है?",
     "बिहार चौपाल बनाम कर्नाटक चावड़ी की भागीदारी की तुलना करें",
@@ -311,6 +368,7 @@ export const SUGGESTED_PROMPTS: Record<Language, string[]> = {
     "बातचीत पूर्णता दर कैसे बेहतर करें?",
   ],
   ta: [
+    "MI கதைகளை தலைப்பு வாரியாக வகைப்படுத்து (சொல்-டீடப்)",
     "இதுவரை எத்தனை பெற்றோர் MITRA-வுடன் ஈடுபட்டுள்ளனர்?",
     "எந்த நிலைகளில் அதிகபட்ச விலகல் உள்ளது?",
     "பீகார் சௌபால் vs கர்நாடகா சாவடி ஈடுபாட்டை ஒப்பிடு",
@@ -319,6 +377,7 @@ export const SUGGESTED_PROMPTS: Record<Language, string[]> = {
     "உரையாடல் முடிவு விகிதத்தை எப்படி மேம்படுத்துவது?",
   ],
   kn: [
+    "MI ಕಥೆಗಳನ್ನು ವಿಷಯ ಪ್ರಕಾರ ವರ್ಗೀಕರಿಸಿ (ಸೆಮ್ಯಾಂಟಿಕ್ ಡೀಡಪ್)",
     "ಇಲ್ಲಿಯವರೆಗೆ ಎಷ್ಟು ಪೋಷಕರು MITRA-ನಲ್ಲಿ ತೊಡಗಿಸಿಕೊಂಡಿದ್ದಾರೆ?",
     "ಯಾವ ಹಂತಗಳಲ್ಲಿ ಹೆಚ್ಚು ಇಳಿಕೆ ಆಗುತ್ತಿದೆ?",
     "ಬಿಹಾರ ಚೌಪಾಲ್ vs ಕರ್ನಾಟಕ ಚಾವಡಿ ತೊಡಗಿಸಿಕೊಳ್ಳುವಿಕೆ ಹೋಲಿಸಿ",
@@ -410,18 +469,20 @@ function filterDays(byDay: [string, number][], rangeKey: string): [string, numbe
 }
 
 // ---------------- Intent routing ----------------
-type Intent = "volume" | "completion" | "stages" | "compare_program" | "compare_state" | "trend" | "default";
+type Intent = "volume" | "completion" | "stages" | "compare_program" | "compare_state" | "trend" | "themes" | "default";
 function routeIntent(q: string): Intent {
   const s = q.toLowerCase();
   const has = (...k: string[]) => k.some((w) => s.includes(w));
   if (has("complete", "completion", "drop", "drop-off", "dropoff", "abandon", "पूर्ण", "छूट", "முடி", "விலக", "ಪೂರ್ಣ", "ಇಳಿಕ")) return "completion";
-  if (has("stage", "topic", "theme", "discussion", "barrier", "चरण", "विषय", "बाधा", "நிலை", "தலைப்பு", "தடை", "ಹಂತ", "ವಿಷಯ", "ಅಡೆತಡೆ")) return "stages";
-  if (has("compare", "vs", "versus", "bihar vs", "chaupal", "chavadi", "तुलना", "बनाम", "ஒப்பி", "vs", "ಹೋಲಿಸಿ", "vs")) {
+  // Themes (semantic MI classification) — check before generic "stage/topic" routing
+  if (has("theme", "classify", "category", "merged", "dedup", "विषय वर्गीकरण", "வகைப்பாடு", "ವರ್ಗೀಕರಣ") || classifyTheme(q)) return "themes";
+  if (has("stage", "topic", "discussion", "barrier", "चरण", "बाधा", "நிலை", "தலைப்பு", "தடை", "ಹಂತ", "ಅಡೆತಡೆ")) return "stages";
+  if (has("compare", "vs", "versus", "bihar vs", "chaupal", "chavadi", "तुलना", "बनाम", "ஒப்பி", "ಹೋಲಿಸಿ")) {
     if (has("bihar", "karnataka", "बिहार", "कर्नाटक", "பீகார்", "கர்நாடகா", "ಬಿಹಾರ", "ಕರ್ನಾಟಕ", "state", "राज्य", "மாநில", "ರಾಜ್ಯ")) return "compare_state";
     return "compare_program";
   }
   if (has("trend", "daily", "weekly", "over time", "रुझान", "दैनिक", "போக்கு", "தினசரி", "ಪ್ರವೃತ್ತಿ", "ದೈನಂದಿನ")) return "trend";
-  if (has("how many", "count", "total", "engaged", "parent", "session", "message", "कितने", "कुल", "अभिभावक", "एत்தனை", "மொத்த", "ஈடுபாடு", "ಎಷ್ಟು", "ಒಟ್ಟು", "ಪೋಷಕ")) return "volume";
+  if (has("how many", "count", "total", "engaged", "parent", "session", "message", "कितने", "कुल", "अभिभावक", "எத்தனை", "மொத்த", "ஈடுபாடு", "ಎಷ್ಟು", "ಒಟ್ಟು", "ಪೋಷಕ")) return "volume";
   return "default";
 }
 
@@ -849,6 +910,93 @@ function buildTrend(ctx: AnswerContext, lang: Language): AnswerBlock[] {
   ];
 }
 
+function buildThemes(ctx: AnswerContext, lang: Language, question: string): AnswerBlock[] {
+  const focused = classifyTheme(question);
+  const allKeys = (Object.keys(THEME_KB) as ThemeKey[]).filter((k) => k !== "emerging");
+  // Synthetic share — anchored on baseline; if a state is filtered, tilt a couple themes.
+  const tilt: Record<ThemeKey, number> = { poverty:0, documents:0, marriage:0, distance:0, attitudes:0, infra:0, teacher:0, safety:0, substance:0, other:0, emerging:0 };
+  if (ctx.state === "Bihar") { tilt.poverty += 4; tilt.documents += 3; tilt.marriage += 2; }
+  if (ctx.state === "Karnataka") { tilt.infra += 3; tilt.teacher += 3; tilt.distance += 2; }
+  const rows = allKeys
+    .map((k) => ({ k, share: THEME_KB[k].share + (tilt[k] ?? 0) }))
+    .sort((a, b) => b.share - a.share);
+  const total = rows.reduce((a, r) => a + r.share, 0);
+  const topKey = (focused ?? rows[0].k) as ThemeKey;
+  const top = THEME_KB[topKey];
+
+  const tLabel = (en: string, hi: string, ta: string, kn: string) =>
+    lang === "hi" ? hi : lang === "ta" ? ta : lang === "kn" ? kn : en;
+
+  // Fact | Trigger | Action — three structured rows, per PDF output spec.
+  const factTriggerAction: AnswerBlock = {
+    type: "breakdown",
+    label: tLabel("Fact · Trigger · Action", "तथ्य · कारण · कार्रवाई", "உண்மை · தூண்டுதல் · நடவடிக்கை", "ಸತ್ಯ · ಪ್ರಚೋದನೆ · ಕ್ರಮ"),
+    rows: [
+      { name: tLabel("Fact", "तथ्य", "உண்மை", "ಸತ್ಯ"),       value: expandAbbr(top.mergedConcept),           delta: `${top.share + (tilt[topKey] ?? 0)}% share`, tone: "pos" },
+      { name: tLabel("Why (Trigger)", "क्यों (कारण)", "ஏன் (காரணம்)", "ಏಕೆ (ಕಾರಣ)"), value: expandAbbr(top.mechanism), tone: "neg" },
+      { name: tLabel("Action (Next Step)", "कार्रवाई (अगला कदम)", "நடவடிக்கை (அடுத்த படி)", "ಕ್ರಮ (ಮುಂದಿನ ಹಂತ)"), value: tLabel(
+        "Run A/B on facilitator script for this theme; n≥1,200 stories/arm; primary = theme-resolution flag; 21-day window.",
+        "इस विषय के लिए फैसिलिटेटर स्क्रिप्ट पर A/B; n≥1,200/आर्म; प्राथमिक = थीम-रिज़ॉल्यूशन फ्लैग; 21 दिन।",
+        "இந்த தலைப்புக்கு ஃபெசிலிடேட்டர் ஸ்கிரிப்டில் A/B; n≥1,200/அர்ம்; முதன்மை = தீம்-தீர்வு கொடி; 21 நாட்கள்.",
+        "ಈ ವಿಷಯಕ್ಕೆ ಫೆಸಿಲಿಟೇಟರ್ ಸ್ಕ್ರಿಪ್ಟ್‌ನಲ್ಲಿ A/B; n≥1,200/ಆರ್ಮ್; ಪ್ರಾಥಮಿಕ = ಥೀಮ್-ಪರಿಹಾರ ಧ್ವಜ; 21 ದಿನಗಳು."
+      ), tone: "pos" },
+    ],
+  };
+
+  // 3-dimension drivers (Mechanism · Impact · Systemic)
+  const dim3: AnswerBlock = {
+    type: "drivers",
+    items: [
+      { label: tLabel("Mechanism", "तंत्र", "செயல்முறை", "ಕಾರ್ಯವಿಧಾನ") + " — " + top.mechanism, impact: "D1", tone: "neg" },
+      { label: tLabel("Impact", "प्रभाव", "தாக்கம்", "ಪ್ರಭಾವ") + " — " + top.impact,             impact: "D2", tone: "neg" },
+      { label: tLabel("Systemic", "व्यवस्थागत", "முறைமையான", "ವ್ಯವಸ್ಥಿತ") + " — " + top.systemic, impact: "D3", tone: "neutral" },
+    ],
+  };
+
+  // Top themes table — post-deduplication shares
+  const topThemes: AnswerBlock = {
+    type: "breakdown",
+    label: tLabel("Top themes (semantic-deduplicated)", "मुख्य विषय (शब्दार्थ-डीडुप)", "முக்கிய தலைப்புகள் (சொல்-டீடப்)", "ಮುಖ್ಯ ವಿಷಯಗಳು (ಸೆಮ್ಯಾಂಟಿಕ್-ಡೀಡಪ್)"),
+    rows: rows.slice(0, 6).map((r) => ({
+      name: THEME_KB[r.k].label + (r.k === topKey ? " ◆" : ""),
+      value: THEME_KB[r.k].mergedConcept,
+      delta: ((r.share / total) * 100).toFixed(1) + "%",
+      tone: r.k === topKey ? "neg" as const : "pos" as const,
+    })),
+  };
+
+  // Emerging-trend guard: if "other" exceeds 10% target, surface it
+  const otherShare = (rows.find((r) => r.k === "other")?.share ?? 0) / total * 100;
+  const emergingNote = otherShare > 10
+    ? tLabel(
+        `"Other" is ${otherShare.toFixed(1)}% (target <10%) — promote a candidate to a new theme via taxonomy review.`,
+        `"अन्य" ${otherShare.toFixed(1)}% (लक्ष्य <10%) — टैक्सोनॉमी समीक्षा में नई थीम बनाएँ।`,
+        `"மற்றவை" ${otherShare.toFixed(1)}% (இலக்கு <10%) — வகைப்பாட்டு மறுபரிசீலனை.`,
+        `"ಇತರ" ${otherShare.toFixed(1)}% (ಗುರಿ <10%) — ವರ್ಗೀಕರಣ ಪರಿಶೀಲನೆ.`
+      )
+    : "";
+
+  const interp: AnswerBlock = {
+    type: "interpretation",
+    text: roleScope(ctx.role, lang) + " " + tLabel(
+      `Top theme: ${top.label} → Merged_Concept: "${top.mergedConcept}". Semantic deduplication collapses surface variants (e.g., "No Aadhaar" + "ID not made") into one strategic concept, so resourcing tracks the underlying issue, not phrasing. ${emergingNote}`,
+      `मुख्य विषय: ${top.label} → मर्ज्ड-कॉन्सेप्ट: "${top.mergedConcept}"। शब्दार्थ डीडुप सतह-वैरिएंट को एक रणनीतिक अवधारणा में मिलाता है। ${emergingNote}`,
+      `முக்கிய தலைப்பு: ${top.label} → ஒன்றிணைந்த கருத்து: "${top.mergedConcept}". ${emergingNote}`,
+      `ಮುಖ್ಯ ವಿಷಯ: ${top.label} → ವಿಲೀನ ಪರಿಕಲ್ಪನೆ: "${top.mergedConcept}". ${emergingNote}`
+    ),
+  };
+
+  return [
+    { type: "kpi", label: tLabel("Active themes", "सक्रिय विषय", "செயலில் உள்ள தலைப்புகள்", "ಸಕ್ರಿಯ ವಿಷಯಗಳು"), value: String(rows.length), delta: tLabel(`Lead: ${top.label}`, `अग्रणी: ${top.label}`, `முன்னணி: ${top.label}`, `ಮುಂಚೂಣಿ: ${top.label}`), deltaDir: "flat" },
+    factTriggerAction,
+    topThemes,
+    dim3,
+    interp,
+    { type: "remedials", items: remediationsFor(ctx.role, "themes", lang) },
+    { type: "followups", items: SUGGESTED_PROMPTS[lang].slice(2, 5) },
+  ];
+}
+
 function buildDefault(ctx: AnswerContext, lang: Language): AnswerBlock[] {
   const m = metricsFor(ctx.program, ctx.state);
   const lab = L[lang];
@@ -891,6 +1039,7 @@ export function generateAnswer(question: string, language: Language, ctx: Answer
     case "compare_program": blocks = buildProgramCompare(ctx, language); break;
     case "compare_state": blocks = buildStateCompare(ctx, language); break;
     case "trend": blocks = buildTrend(ctx, language); break;
+    case "themes": blocks = buildThemes(ctx, language, question); break;
     default: blocks = buildDefault(ctx, language);
   }
   return {
