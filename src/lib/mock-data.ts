@@ -1035,6 +1035,7 @@ export function generateAnswer(question: string, language: Language, ctx: Answer
     case "compare_program": blocks = buildProgramCompare(ctx, language); break;
     case "compare_state": blocks = buildStateCompare(ctx, language); break;
     case "trend": blocks = buildTrend(ctx, language); break;
+    case "themes": blocks = buildThemes(ctx, language, question); break;
     default: blocks = buildDefault(ctx, language);
   }
   return {
