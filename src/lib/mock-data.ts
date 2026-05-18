@@ -350,6 +350,7 @@ export const UI: Record<Language, UIStrings> = {
 // ---------------- Suggested starter questions ----------------
 export const SUGGESTED_PROMPTS: Record<Language, string[]> = {
   en: [
+    "Classify MI stories by theme (semantic dedup)",
     "How many parents engaged with MITRA so far?",
     "Which stages have the most drop-off?",
     "Compare Bihar Chaupal vs Karnataka Chavadi engagement",
@@ -358,6 +359,7 @@ export const SUGGESTED_PROMPTS: Record<Language, string[]> = {
     "How can we improve conversation completion rate?",
   ],
   hi: [
+    "MI कहानियों को विषय अनुसार वर्गीकृत करें",
     "अब तक कितने अभिभावकों ने MITRA से बातचीत की है?",
     "किन चरणों में सबसे अधिक छूटना हो रहा है?",
     "बिहार चौपाल बनाम कर्नाटक चावड़ी की भागीदारी की तुलना करें",
@@ -366,6 +368,7 @@ export const SUGGESTED_PROMPTS: Record<Language, string[]> = {
     "बातचीत पूर्णता दर कैसे बेहतर करें?",
   ],
   ta: [
+    "MI கதைகளை தலைப்பு வாரியாக வகைப்படுத்து (சொல்-டீடப்)",
     "இதுவரை எத்தனை பெற்றோர் MITRA-வுடன் ஈடுபட்டுள்ளனர்?",
     "எந்த நிலைகளில் அதிகபட்ச விலகல் உள்ளது?",
     "பீகார் சௌபால் vs கர்நாடகா சாவடி ஈடுபாட்டை ஒப்பிடு",
@@ -374,6 +377,7 @@ export const SUGGESTED_PROMPTS: Record<Language, string[]> = {
     "உரையாடல் முடிவு விகிதத்தை எப்படி மேம்படுத்துவது?",
   ],
   kn: [
+    "MI ಕಥೆಗಳನ್ನು ವಿಷಯ ಪ್ರಕಾರ ವರ್ಗೀಕರಿಸಿ (ಸೆಮ್ಯಾಂಟಿಕ್ ಡೀಡಪ್)",
     "ಇಲ್ಲಿಯವರೆಗೆ ಎಷ್ಟು ಪೋಷಕರು MITRA-ನಲ್ಲಿ ತೊಡಗಿಸಿಕೊಂಡಿದ್ದಾರೆ?",
     "ಯಾವ ಹಂತಗಳಲ್ಲಿ ಹೆಚ್ಚು ಇಳಿಕೆ ಆಗುತ್ತಿದೆ?",
     "ಬಿಹಾರ ಚೌಪಾಲ್ vs ಕರ್ನಾಟಕ ಚಾವಡಿ ತೊಡಗಿಸಿಕೊಳ್ಳುವಿಕೆ ಹೋಲಿಸಿ",
