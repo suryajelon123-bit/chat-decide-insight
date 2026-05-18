@@ -184,21 +184,43 @@ export function AnswerCard({ answer, onFollowup, language }: { answer: Answer; o
         </button>
       </div>
 
+      {/* TOP — Direct Answer */}
+      <SandwichLabel icon={Target} label="Direct Answer" hint="the number" />
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         {answer.blocks
-          .filter((b) => b.type === "kpi" || b.type === "trend")
+          .filter((b) => b.type === "kpi")
           .map((b, i) => (
-            <BlockRenderer key={i} block={b} language={language} />
+            <BlockRenderer key={`k-${i}`} block={b} language={language} />
           ))}
       </div>
 
-      <div className="space-y-3">
-        {answer.blocks
-          .filter((b) => b.type !== "kpi" && b.type !== "trend" && b.type !== "followups")
-          .map((b, i) => (
-            <BlockRenderer key={i} block={b} language={language} />
-          ))}
-      </div>
+      {/* MIDDLE — Visual */}
+      {answer.blocks.some((b) => b.type === "trend" || b.type === "breakdown" || b.type === "drivers") && (
+        <>
+          <SandwichLabel icon={BarChart3} label="Visual" hint="trend · breakdown · drivers" />
+          <div className="space-y-3">
+            {answer.blocks
+              .filter((b) => b.type === "trend" || b.type === "breakdown" || b.type === "drivers")
+              .map((b, i) => (
+                <BlockRenderer key={`v-${i}`} block={b} language={language} />
+              ))}
+          </div>
+        </>
+      )}
+
+      {/* BOTTOM — Strategic Inference / So What? */}
+      {answer.blocks.some((b) => b.type === "interpretation" || b.type === "remedials") && (
+        <>
+          <SandwichLabel icon={Brain} label="Strategic Inference" hint="so what — and what to do" />
+          <div className="space-y-3">
+            {answer.blocks
+              .filter((b) => b.type === "interpretation" || b.type === "remedials")
+              .map((b, i) => (
+                <BlockRenderer key={`s-${i}`} block={b} language={language} />
+              ))}
+          </div>
+        </>
+      )}
 
       {answer.blocks
         .filter((b) => b.type === "followups")
