@@ -2,6 +2,8 @@ import { useEffect, useRef } from "react";
 import { Sparkles, User } from "lucide-react";
 import { UI, type Language, type Turn } from "@/lib/mock-data";
 import { AnswerCard } from "./AnswerCard";
+import { ClaudeBlock } from "./ClaudeBlock";
+import type { ClaudeStreamState } from "@/hooks/use-claude-stream";
 
 type Props = {
   turns: Turn[];
@@ -9,14 +11,24 @@ type Props = {
   onFollowup: (q: string) => void;
   language: Language;
   starters: string[];
+  claudeState: ClaudeStreamState;
+  onClaudeRetry?: () => void;
 };
 
-export function ChatThread({ turns, busy, onFollowup, language, starters }: Props) {
+export function ChatThread({ turns, busy, onFollowup, language, starters, claudeState, onClaudeRetry }: Props) {
   const t = UI[language];
   const endRef = useRef<HTMLDivElement>(null);
+
+  const lastAssistantIdx = (() => {
+    for (let i = turns.length - 1; i >= 0; i--) {
+      if (turns[i].role === "assistant") return i;
+    }
+    return -1;
+  })();
+
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [turns.length, busy]);
+  }, [turns.length, busy, claudeState.text]);
 
   if (turns.length === 0) {
     return (
@@ -53,7 +65,7 @@ export function ChatThread({ turns, busy, onFollowup, language, starters }: Prop
   return (
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-3xl space-y-8 px-4 py-8">
-        {turns.map((tn) =>
+        {turns.map((tn, idx) =>
           tn.role === "user" ? (
             <div key={tn.id} className="flex justify-end gap-3">
               <div className="max-w-[85%] rounded-2xl rounded-tr-sm bg-surface-3 px-4 py-2.5 text-sm text-foreground">
@@ -68,8 +80,11 @@ export function ChatThread({ turns, busy, onFollowup, language, starters }: Prop
               <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-fact to-insight">
                 <Sparkles className="h-3.5 w-3.5 text-background" />
               </div>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 space-y-3">
                 <AnswerCard answer={tn.answer} onFollowup={onFollowup} language={language} />
+                {idx === lastAssistantIdx && claudeState.status !== "idle" && (
+                  <ClaudeBlock state={claudeState} onRetry={onClaudeRetry} />
+                )}
               </div>
             </div>
           )

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { LeftRail } from "@/components/dashboard/LeftRail";
 import { RightRail } from "@/components/dashboard/RightRail";
 import { ChatThread } from "@/components/dashboard/ChatThread";
@@ -15,10 +15,12 @@ import {
   type ProgramKey,
   type StateKey,
   type Turn,
+  type Answer,
 } from "@/lib/mock-data";
 import { Download, FileSpreadsheet, FileText, FileType, PanelLeftOpen, PanelRightOpen } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { exportCSV, exportExcel, exportPDF } from "@/lib/export-conversation";
+import { useClaudeStream, type ClaudeStreamState } from "@/hooks/use-claude-stream";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -45,8 +47,13 @@ function Index() {
   const rangeLabel = RANGES_OPT[language].find((r) => r.key === rangeKey)?.label ?? rangeKey;
   const contextLine = `${role} · ${PROGRAM_LABELS[language][program]} · ${STATE_LABELS[language][stateFilter]} · ${rangeLabel}`;
 
+  const { state: claudeState, stream: claudeStream, reset: claudeReset } = useClaudeStream();
+
+  const lastAnswerRef = useRef<{ answer: Answer; question: string } | null>(null);
+
   const handleAsk = (q: string) => {
     if (busy) return;
+    claudeReset();
     const userTurn: Turn = {
       id: crypto.randomUUID(),
       role: "user",
@@ -58,9 +65,23 @@ function Index() {
     setBusy(true);
     setTimeout(() => {
       const answer = generateAnswer(q, language, { program, state: stateFilter, rangeKey, rangeLabel, role: typedRole });
+      lastAnswerRef.current = { answer, question: q };
       setTurns((prev) => [...prev, { id: crypto.randomUUID(), role: "assistant", answer }]);
       setBusy(false);
+      claudeStream(q, answer, language, contextLine);
     }, 800);
+  };
+
+  const handleNewThread = () => {
+    claudeReset();
+    lastAnswerRef.current = null;
+    setTurns([]);
+  };
+
+  const handleRetry = () => {
+    if (lastAnswerRef.current) {
+      claudeStream(lastAnswerRef.current.question, lastAnswerRef.current.answer, language, contextLine);
+    }
   };
 
   const latestAnswer = useMemo(() => {
@@ -71,6 +92,8 @@ function Index() {
     return undefined;
   }, [turns]);
 
+  const latestClaudeState: ClaudeStreamState = claudeState;
+
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
       <LeftRail
@@ -78,7 +101,7 @@ function Index() {
         onRoleChange={setRole}
         language={language}
         onLanguageChange={setLanguage}
-        onNewThread={() => setTurns([])}
+        onNewThread={handleNewThread}
       />
 
       <main className="flex min-w-0 flex-1 flex-col">
@@ -145,7 +168,15 @@ function Index() {
         </header>
 
         <div className="min-h-0 flex-1">
-          <ChatThread turns={turns} busy={busy} onFollowup={handleAsk} language={language} starters={starters} />
+          <ChatThread
+            turns={turns}
+            busy={busy}
+            onFollowup={handleAsk}
+            language={language}
+            starters={starters}
+            claudeState={latestClaudeState}
+            onClaudeRetry={handleRetry}
+          />
         </div>
 
         <Composer onSubmit={handleAsk} suggestions={starters.slice(0, 3)} busy={busy} language={language} />
