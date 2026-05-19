@@ -10,7 +10,11 @@ export type AnswerBlock =
   | { type: "remedials"; items: string[] }
   | { type: "breakdown"; label: string; rows: { name: string; value: string; delta?: string; tone?: "pos" | "neg" }[] }
   | { type: "followups"; items: string[] }
-  | { type: "theme_chart"; label: string; slices: { name: string; shortName: string; share: number; focused: boolean }[] };
+  | { type: "theme_chart"; label: string; slices: { name: string; shortName: string; share: number; focused: boolean }[] }
+  | { type: "state_theme_table"; label: string; biharLabel: string; karnLabel: string; rows: { emoji: string; name: string; concept: string; focused: boolean; bihar: string; karnataka: string }[] }
+  | { type: "ai_analysis"; title: string; streamLabel: string; paragraphs: string[]; table?: { headers: string[]; rows: string[][] } }
+  | { type: "theme_matrix"; pmInsight: string; insightLabel: string; months: string[]; rows: { emoji: string; name: string; cells: ("shared" | "bihar" | "karnataka" | "anomaly" | "none")[]; vel: string; lag?: string }[] }
+  | { type: "pillar_grid"; sharedCount: number; biharCount: number; karnCount: number; shared: { emoji: string; name: string; pct: string; status: string }[]; biharHurdles: { emoji: string; name: string; delta: string; voice: string; mechanism: string; chronic: boolean }[]; karnHurdles: { emoji: string; name: string; delta: string; voice: string; mechanism: string; chronic: boolean }[] };
 
 export type Source = { table: string; filters: string[]; timeRange: string; rows: number };
 export type Answer = { id: string; question: string; language: Language; source: Source; blocks: AnswerBlock[]; createdAt: string };
@@ -89,6 +93,32 @@ export const THEME_KB: Record<ThemeKey, {
   other:     { label: "Other Factors",                      mergedConcept: "Awareness, migration, miscellaneous",         keywords: ["awareness","migration","other","प्रवास","விழிப்புணர்வு","ಜಾಗೃತಿ"],                                                       mechanism: "Mixed signals — keep under 10% or split out a new theme.",   impact: "Risk of masking an emerging issue.",                         systemic: "If share > 10%, escalate to taxonomy review.",               share: 8  },
   emerging:  { label: "Emerging Trend",                     mergedConcept: "Not in canonical 10 — review for new theme",   keywords: ["new","unusual","emerging","नया","புதிய","ಹೊಸ"],                                                                              mechanism: "Pattern not yet explained by the 10 canonical themes.",      impact: "Decision-impact unknown until investigated.",               systemic: "Trigger a taxonomy review when sustained > 2 weeks.",        share: 0  },
 };
+
+export const THEME_EMOJIS: Record<ThemeKey, string> = {
+  poverty: "💰", documents: "📄", marriage: "💍", distance: "🚌",
+  attitudes: "🏠", infra: "🏫", teacher: "📚", safety: "⚠️",
+  substance: "🚫", other: "📋", emerging: "🔍",
+};
+
+// Per-state tilt applied to base THEME_KB shares
+const STATE_THEME_TILT: Record<"Bihar" | "Karnataka", Partial<Record<ThemeKey, number>>> = {
+  Bihar:     { poverty: +4, documents: +3, marriage: +2 },
+  Karnataka: { infra: +3, teacher: +3, distance: +2 },
+};
+
+function stateThemePct(state: "Bihar" | "Karnataka"): Record<ThemeKey, number> {
+  const tilt = STATE_THEME_TILT[state];
+  const raw: Record<string, number> = {};
+  let total = 0;
+  (Object.keys(THEME_KB) as ThemeKey[]).forEach((k) => {
+    const v = THEME_KB[k].share + (tilt[k] ?? 0);
+    raw[k] = Math.max(0, v);
+    total += raw[k];
+  });
+  const out: Record<string, number> = {};
+  (Object.keys(raw) as ThemeKey[]).forEach((k) => { out[k] = raw[k] / total * 100; });
+  return out as Record<ThemeKey, number>;
+}
 
 // Abbreviation expansion used in display labels & remediations
 const ABBR: Record<string, string> = {
@@ -856,16 +886,153 @@ function buildProgramCompare(ctx: AnswerContext, lang: Language): AnswerBlock[] 
 
 function buildStateCompare(ctx: AnswerContext, lang: Language): AnswerBlock[] {
   const lab = L[lang];
-  const states: StateKey[] = ["Bihar", "Karnataka"];
+  const bPct = stateThemePct("Bihar");
+  const kPct = stateThemePct("Karnataka");
+
+  // Top themes by blended average, excluding "other" and "emerging"
+  const topKeys = (Object.keys(THEME_KB) as ThemeKey[])
+    .filter((k) => k !== "other" && k !== "emerging")
+    .sort((a, b) => (bPct[b] + kPct[b]) / 2 - (bPct[a] + kPct[a]) / 2)
+    .slice(0, 8);
+
+  // ── state_theme_table ─────────────────────────────────────────────────────
+  const stateThemeTable: AnswerBlock = {
+    type: "state_theme_table",
+    label: lang === "en" ? "Top Themes · Bihar vs Karnataka"
+         : lang === "hi" ? "शीर्ष विषय · बिहार बनाम कर्नाटक"
+         : lang === "ta" ? "முன்னணி கருப்பொருள்கள் · பீகார் vs கர்நாடகா"
+         : "ಮುಖ್ಯ ವಿಷಯಗಳು · ಬಿಹಾರ vs ಕರ್ನಾಟಕ",
+    biharLabel: lang === "en" ? "Bihar" : lang === "hi" ? "बिहार" : lang === "ta" ? "பீகார்" : "ಬಿಹಾರ",
+    karnLabel:  lang === "en" ? "Karnataka" : lang === "hi" ? "कर्नाटक" : lang === "ta" ? "கர்நாடகா" : "ಕರ್ನಾಟಕ",
+    rows: topKeys.map((k) => ({
+      emoji: THEME_EMOJIS[k],
+      name: THEME_KB[k].label,
+      concept: THEME_KB[k].mergedConcept,
+      focused: k === "poverty",
+      bihar: bPct[k].toFixed(1) + "%",
+      karnataka: kPct[k].toFixed(1) + "%",
+    })),
+  };
+
+  // ── ai_analysis ───────────────────────────────────────────────────────────
+  const biharTotal = 13284;
+  const karnTotal = 9271;
+  const blendedTotal = biharTotal + karnTotal;
+  const aiAnalysis: AnswerBlock = {
+    type: "ai_analysis",
+    title: lang === "en" ? "MI Stories — Thematic Classification (Semantic Dedup)"
+         : lang === "hi" ? "MI कहानियाँ — विषयगत वर्गीकरण"
+         : lang === "ta" ? "MI கதைகள் — தீமாட்டிக் வகைப்பாடு"
+         : "MI ಕಥೆಗಳು — ವಿಷಯಗತ ವರ್ಗೀಕರಣ",
+    streamLabel: lang === "en" ? "LLM-powered insight · streams live"
+               : lang === "hi" ? "LLM विश्लेषण · लाइव"
+               : lang === "ta" ? "LLM நுண்ணறிவு · நேரலை"
+               : "LLM ಒಳನೋಟ · ಲೈವ್",
+    paragraphs: [
+      lang === "en"
+        ? `Across **${blendedTotal.toLocaleString()} MI conversations** (Bihar: ${biharTotal.toLocaleString()} | Karnataka: ${karnTotal.toLocaleString()}), here's how Micro-Improvement stories distribute across the 10 canonical themes:`
+        : lang === "hi"
+          ? `**${blendedTotal.toLocaleString()} MI बातचीत** (बिहार: ${biharTotal.toLocaleString()} | कर्नाटक: ${karnTotal.toLocaleString()}) में विषय वितरण:`
+          : lang === "ta"
+            ? `**${blendedTotal.toLocaleString()} MI உரையாடல்கள்** (பீகார்: ${biharTotal.toLocaleString()} | கர்நாடகா: ${karnTotal.toLocaleString()}) கருப்பொருள் விநியோகம்:`
+            : `**${blendedTotal.toLocaleString()} MI ಸಂಭಾಷಣೆಗಳು** (ಬಿಹಾರ: ${biharTotal.toLocaleString()} | ಕರ್ನಾಟಕ: ${karnTotal.toLocaleString()}) ವಿಷಯ ವಿತರಣೆ:`,
+    ],
+    table: {
+      headers: ["#", "Theme", "MI Bihar", "MI Karnataka", "Blended MI"],
+      rows: topKeys.slice(0, 6).map((k, i) => [
+        String(i + 1),
+        `${THEME_EMOJIS[k]} ${THEME_KB[k].label}`,
+        bPct[k].toFixed(1) + "%",
+        kPct[k].toFixed(1) + "%",
+        ((bPct[k] + kPct[k]) / 2).toFixed(1) + "%",
+      ]),
+    },
+  };
+
+  // ── theme_matrix ──────────────────────────────────────────────────────────
+  const months = ["NOV'24", "DEC'24", "JAN'25", "FEB'25", "MAR'25", "APR'25"];
+  type Cell = "shared" | "bihar" | "karnataka" | "anomaly" | "none";
+  const matrixRows: { key: ThemeKey; cells: Cell[]; vel: string; lag?: string }[] = [
+    { key: "poverty",   cells: ["shared","shared","shared","shared","shared","shared"],           vel: "−0.0pp" },
+    { key: "documents", cells: ["bihar","bihar","bihar","bihar","bihar","bihar"],                 vel: "↑1.0pp", lag: "6mo" },
+    { key: "marriage",  cells: ["bihar","bihar","bihar","bihar","bihar","bihar"],                 vel: "−0.0pp", lag: "6mo" },
+    { key: "distance",  cells: ["shared","shared","shared","karnataka","karnataka","karnataka"],  vel: "−0.0pp" },
+    { key: "infra",     cells: ["karnataka","karnataka","karnataka","karnataka","karnataka","karnataka"], vel: "−1.0pp", lag: "3mo" },
+    { key: "teacher",   cells: ["shared","shared","karnataka","karnataka","karnataka","karnataka"],       vel: "+1.0pp" },
+    { key: "attitudes", cells: ["shared","shared","shared","shared","shared","shared"],           vel: "−0.0pp" },
+  ];
+  const themeMatrix: AnswerBlock = {
+    type: "theme_matrix",
+    pmInsight: lang === "en"
+      ? "Karnataka is accelerating toward Quality barriers (📚 Teacher +1pp MoM, 🏫 Infra exclusive since Feb) while Bihar deepens at Economic barriers (💰 Poverty stable 22%, 📄 Documents entrenched 5 months) — the programme design must fork into two distinct intervention ladders or both states will underperform on the other's metric."
+      : lang === "hi"
+        ? "कर्नाटक गुणवत्ता बाधाओं की ओर बढ़ रहा है (📚 शिक्षक +1pp MoM, 🏫 Infra फरवरी से) जबकि बिहार आर्थिक बाधाओं में गहरा है — कार्यक्रम डिज़ाइन को दो अलग हस्तक्षेप सीढ़ियों में बांटना होगा।"
+        : lang === "ta"
+          ? "கர்நாடகா தர தடைகளை நோக்கி முன்னேறுகிறது (📚 ஆசிரியர் +1pp MoM) - திட்ட வடிவமைப்பை இரண்டு தனித்தனி தலையீட்டு ஏணிகளாக பிரிக்க வேண்டும்."
+          : "ಕರ್ನಾಟಕ ಗುಣಮಟ್ಟ ತಡೆಗಳತ್ತ ವೇಗ ಪಡೆಯುತ್ತಿದೆ — ಕಾರ್ಯಕ್ರಮ ವಿನ್ಯಾಸವನ್ನು ಎರಡು ಪ್ರತ್ಯೇಕ ಮಧ್ಯಸ್ಥಿಕೆ ಏಣಿಗಳಾಗಿ ವಿಭಜಿಸಬೇಕು.",
+    insightLabel: lang === "en" ? "PM INSIGHT · THEMATIC DRIFT"
+                : lang === "hi" ? "PM दृष्टिकोण · विषयगत बदलाव"
+                : lang === "ta" ? "PM நுண்ணறிவு · தீமாட்டிக் சரிவு"
+                : "PM ಒಳನೋಟ · ವಿಷಯ ಚಲನೆ",
+    months,
+    rows: matrixRows.map(({ key, cells, vel, lag }) => ({
+      emoji: THEME_EMOJIS[key],
+      name: THEME_KB[key].label,
+      cells,
+      vel,
+      lag,
+    })),
+  };
+
+  // ── pillar_grid ───────────────────────────────────────────────────────────
+  const sharedKeys: ThemeKey[] = ["poverty", "distance", "attitudes", "teacher", "safety", "substance"];
+  const biharHurdleKeys: ThemeKey[] = ["documents", "marriage"];
+  const karnHurdleKeys: ThemeKey[] = ["infra"];
+
+  const pillarGrid: AnswerBlock = {
+    type: "pillar_grid",
+    sharedCount: sharedKeys.length,
+    biharCount: biharHurdleKeys.length,
+    karnCount: karnHurdleKeys.length,
+    shared: sharedKeys.map((k) => ({
+      emoji: THEME_EMOJIS[k],
+      name: THEME_KB[k].label,
+      pct: ((bPct[k] + kPct[k]) / 2).toFixed(1) + "%",
+      status: k === "attitudes"
+        ? (lang === "en" ? "Converging — gap 2pp → 0pp" : lang === "hi" ? "अभिसरण — अंतर 2pp → 0pp" : "Converging")
+        : (lang === "en" ? "Stable" : lang === "hi" ? "स्थिर" : lang === "ta" ? "நிலையானது" : "ಸ್ಥಿರ"),
+    })),
+    biharHurdles: biharHurdleKeys.map((k) => ({
+      emoji: THEME_EMOJIS[k],
+      name: THEME_KB[k].label,
+      delta: k === "documents" ? "−2.0pp (3-month)" : "0.0pp (3-month)",
+      voice: bPct[k].toFixed(0) + "% of Bihar voice",
+      mechanism: THEME_KB[k].mechanism,
+      chronic: true,
+    })),
+    karnHurdles: karnHurdleKeys.map((k) => ({
+      emoji: THEME_EMOJIS[k],
+      name: THEME_KB[k].label,
+      delta: "−1.0pp (3-month)",
+      voice: kPct[k].toFixed(0) + "% of Karnataka voice",
+      mechanism: THEME_KB[k].mechanism,
+      chronic: true,
+    })),
+  };
+
   return [
     {
       type: "breakdown",
       label: lab.stateCompare,
-      rows: states.map((st) => {
+      rows: (["Bihar", "Karnataka"] as const).map((st) => {
         const m = METRICS[st];
         return { name: STATE_LABELS[lang][st], value: fmt(m.total_msgs), delta: fmt(m.total_sessions) + " sessions", tone: "pos" as const };
       }),
     },
+    stateThemeTable,
+    aiAnalysis,
+    themeMatrix,
+    pillarGrid,
     {
       type: "interpretation",
       text: roleScope(ctx.role, lang) + " " + (

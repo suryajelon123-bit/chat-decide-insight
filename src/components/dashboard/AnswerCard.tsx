@@ -1,7 +1,7 @@
 import {
   ArrowDownRight, ArrowUpRight, Database, Lightbulb, ListChecks,
   Sparkles, TrendingUp, ChevronRight, Share2, Target, BarChart3,
-  Brain, AlertCircle, CheckCircle2, Minus,
+  Brain, AlertCircle, CheckCircle2, Minus, Bot, Layers, Shield,
 } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { UI, type Answer, type AnswerBlock, type Language } from "@/lib/mock-data";
@@ -287,6 +287,260 @@ function BlockRenderer({ block, onFollowup, language }: {
       );
     }
 
+    case "state_theme_table":
+      return (
+        <div className="animate-rise-delay-1 overflow-hidden rounded-xl bg-surface-2 ring-fact">
+          <div className="flex items-center justify-between border-b border-border/60 px-5 py-3">
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{block.label}</div>
+            <Badge tone="fact" language={language} />
+          </div>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border/40">
+                <th className="py-2.5 pl-5 text-left text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Theme</th>
+                <th className="py-2.5 pr-4 text-right text-[10px] font-bold uppercase tracking-widest text-fact">{block.biharLabel}</th>
+                <th className="py-2.5 pr-5 text-right text-[10px] font-bold uppercase tracking-widest" style={{ color: "oklch(0.75 0.14 75)" }}>{block.karnLabel}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/30">
+              {block.rows.map((r) => (
+                <tr key={r.name} className={`group transition-colors hover:bg-surface-3/60 ${r.focused ? "bg-surface-3/80" : ""}`}>
+                  <td className="py-3 pl-5">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-base leading-none">{r.emoji}</span>
+                      <div>
+                        <div className="flex items-center gap-1.5 font-medium text-foreground/90 leading-snug">
+                          {r.name}
+                          {r.focused && <span className="text-fact text-xs">◆</span>}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground leading-snug">{r.concept}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-3 pr-4 text-right font-mono text-sm font-semibold text-fact">{r.bihar}</td>
+                  <td className="py-3 pr-5 text-right font-mono text-sm font-semibold" style={{ color: "oklch(0.75 0.14 75)" }}>{r.karnataka}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+
+    case "ai_analysis": {
+      function renderParagraph(text: string) {
+        const parts = text.split(/(\*\*[^*]+\*\*)/g);
+        return parts.map((p, i) =>
+          p.startsWith("**") && p.endsWith("**")
+            ? <strong key={i} className="font-semibold text-foreground">{p.slice(2, -2)}</strong>
+            : <span key={i}>{p}</span>
+        );
+      }
+      return (
+        <div className="animate-rise-delay-1 overflow-hidden rounded-xl bg-surface-1 ring-insight">
+          <div className="flex items-center gap-2.5 border-b border-insight/25 bg-insight/8 px-5 py-3">
+            <Bot className="h-4 w-4 text-insight" />
+            <span className="text-xs font-bold uppercase tracking-widest text-insight">Claude AI Analysis</span>
+            <span className="ml-1 text-[10px] text-muted-foreground">· {block.streamLabel}</span>
+            <span className="ml-auto flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
+              <span className="text-[10px] text-success font-medium">streams live</span>
+            </span>
+          </div>
+          <div className="px-5 py-4 space-y-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-insight">
+              <Sparkles className="h-3.5 w-3.5" /> {block.title}
+            </div>
+            {block.paragraphs.map((p, i) => (
+              <p key={i} className="text-sm leading-relaxed text-foreground/80">{renderParagraph(p)}</p>
+            ))}
+            {block.table && (
+              <div className="mt-3 overflow-hidden rounded-lg border border-border/50">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-surface-3 border-b border-border/50">
+                      {block.table.headers.map((h) => (
+                        <th key={h} className="px-3 py-2 text-left font-bold uppercase tracking-wider text-muted-foreground/80">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/30">
+                    {block.table.rows.map((row, ri) => (
+                      <tr key={ri} className="hover:bg-surface-2/60 transition-colors">
+                        {row.map((cell, ci) => (
+                          <td key={ci} className={`px-3 py-2 ${ci >= 2 ? "font-mono font-semibold text-fact text-right" : "text-foreground/85"}`}>{cell}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    case "theme_matrix": {
+      const CELL_COLORS: Record<string, string> = {
+        shared:     "bg-purple-500/70",
+        bihar:      "bg-emerald-500/70",
+        karnataka:  "bg-blue-500/70",
+        anomaly:    "border border-white/40 bg-transparent",
+        none:       "bg-surface-3/30",
+      };
+      const LEGEND = [
+        { key: "shared",    color: "bg-purple-500",   label: "Shared" },
+        { key: "bihar",     color: "bg-emerald-500",  label: "Bihar" },
+        { key: "karnataka", color: "bg-blue-500",     label: "Karnataka" },
+        { key: "anomaly",   color: "border border-white/50 bg-transparent", label: "Anomaly" },
+      ];
+      return (
+        <div className="animate-rise-delay-2 space-y-3">
+          {/* PM Insight card */}
+          <div className="relative overflow-hidden rounded-xl bg-surface-1 p-5 ring-insight">
+            <div className="absolute left-0 top-0 h-full w-1 rounded-l-xl bg-gradient-to-b from-insight to-insight/20" />
+            <div className="mb-2 pl-2 text-[10px] font-bold uppercase tracking-widest text-insight">{block.insightLabel}</div>
+            <p className="pl-2 text-sm font-medium leading-relaxed text-foreground/90">{block.pmInsight}</p>
+          </div>
+          {/* Matrix table */}
+          <div className="overflow-hidden rounded-xl bg-surface-2 ring-fact">
+            <div className="flex items-center justify-between border-b border-border/50 px-5 py-3">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <Layers className="h-3.5 w-3.5" /> Monthly Theme Matrix · 6-Month Drift
+              </div>
+              <div className="flex items-center gap-3">
+                {LEGEND.map((l) => (
+                  <div key={l.key} className="flex items-center gap-1.5">
+                    <span className={`inline-block h-2.5 w-2.5 rounded-sm ${l.color}`} />
+                    <span className="text-[10px] text-muted-foreground">{l.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border/40">
+                    <th className="py-2.5 pl-5 text-left text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 w-40">Theme</th>
+                    {block.months.map((m) => (
+                      <th key={m} className="px-2 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">{m}</th>
+                    ))}
+                    <th className="px-2 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">VEL</th>
+                    <th className="pr-5 py-2.5 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">LAG</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/30">
+                  {block.rows.map((r) => (
+                    <tr key={r.name} className="hover:bg-surface-3/40 transition-colors">
+                      <td className="py-3 pl-5">
+                        <div className="flex items-center gap-1.5 font-medium text-foreground/85 leading-snug">
+                          <span>{r.emoji}</span>
+                          <span className="max-w-[120px] truncate">{r.name.split(" ").slice(0, 3).join(" ")}{r.name.split(" ").length > 3 ? "…" : ""}</span>
+                        </div>
+                      </td>
+                      {r.cells.map((c, ci) => (
+                        <td key={ci} className="px-2 py-3">
+                          <div className={`mx-auto h-5 w-12 rounded ${CELL_COLORS[c]}`} />
+                        </td>
+                      ))}
+                      <td className="px-2 py-3 text-center font-mono font-semibold text-[11px] text-muted-foreground">{r.vel}</td>
+                      <td className="pr-5 py-3 text-center">
+                        {r.lag ? (
+                          <span className="inline-flex items-center rounded-full bg-danger/20 px-2 py-0.5 text-[10px] font-bold text-danger">{r.lag}</span>
+                        ) : (
+                          <span className="text-muted-foreground/40 text-xs">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    case "pillar_grid":
+      return (
+        <div className="animate-rise-delay-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {/* Shared Pillars */}
+          <div className="overflow-hidden rounded-xl bg-surface-2 ring-fact">
+            <div className="flex items-center gap-2 border-b border-border/50 px-4 py-3">
+              <Shield className="h-3.5 w-3.5 text-fact" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-fact">Shared Pillars</span>
+              <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-fact/20 font-mono text-[10px] font-bold text-fact">{block.sharedCount}</span>
+            </div>
+            <ul className="divide-y divide-border/30">
+              {block.shared.map((s) => (
+                <li key={s.name} className="flex items-start gap-2.5 px-4 py-2.5 hover:bg-surface-3/50 transition-colors">
+                  <span className="text-sm leading-none mt-0.5">{s.emoji}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[11px] font-semibold text-foreground/90 leading-snug">{s.name.split(" ").slice(0, 2).join(" ")}</div>
+                    <div className="text-[10px] text-muted-foreground leading-snug">{s.status}</div>
+                  </div>
+                  <span className="font-mono text-xs font-bold text-fact shrink-0">{s.pct}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Bihar Hurdles */}
+          <div className="overflow-hidden rounded-xl bg-surface-2" style={{ boxShadow: "inset 0 0 0 1px oklch(0.72 0.16 155 / 30%)" }}>
+            <div className="flex items-center gap-2 border-b border-success/30 bg-success/5 px-4 py-3">
+              <span className="text-sm">🏃</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-success">Bihar Hurdles</span>
+              <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-success/20 font-mono text-[10px] font-bold text-success">{block.biharCount}</span>
+            </div>
+            <ul className="divide-y divide-success/10">
+              {block.biharHurdles.map((h) => (
+                <li key={h.name} className="px-4 py-3 hover:bg-success/5 transition-colors">
+                  <div className="flex items-start gap-2 mb-1.5">
+                    <span className="text-sm leading-none">{h.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[11px] font-semibold text-foreground/90 leading-snug truncate">{h.name.split(" ").slice(0, 3).join(" ")}…</span>
+                        {h.chronic && <span className="inline-flex items-center rounded-full bg-danger/20 px-1.5 py-0.5 text-[9px] font-bold text-danger uppercase">chronic</span>}
+                      </div>
+                      <div className="text-[11px] font-mono font-semibold text-success">{h.delta}</div>
+                    </div>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground leading-snug">{h.voice}</div>
+                  <div className="mt-1 text-[10px] text-foreground/60 leading-snug line-clamp-2">{h.mechanism}</div>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Karnataka Hurdles */}
+          <div className="overflow-hidden rounded-xl bg-surface-2" style={{ boxShadow: "inset 0 0 0 1px oklch(0.68 0.18 220 / 30%)" }}>
+            <div className="flex items-center gap-2 border-b border-blue-400/30 bg-blue-500/5 px-4 py-3">
+              <span className="text-sm">🏃</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-blue-400">Karn. Hurdles</span>
+              <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-blue-500/20 font-mono text-[10px] font-bold text-blue-400">{block.karnCount}</span>
+            </div>
+            <ul className="divide-y divide-blue-400/10">
+              {block.karnHurdles.map((h) => (
+                <li key={h.name} className="px-4 py-3 hover:bg-blue-500/5 transition-colors">
+                  <div className="flex items-start gap-2 mb-1.5">
+                    <span className="text-sm leading-none">{h.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[11px] font-semibold text-foreground/90 leading-snug truncate">{h.name.split(" ").slice(0, 3).join(" ")}…</span>
+                        {h.chronic && <span className="inline-flex items-center rounded-full bg-danger/20 px-1.5 py-0.5 text-[9px] font-bold text-danger uppercase">chronic</span>}
+                      </div>
+                      <div className="text-[11px] font-mono font-semibold text-blue-400">{h.delta}</div>
+                    </div>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground leading-snug">{h.voice}</div>
+                  <div className="mt-1 text-[10px] text-foreground/60 leading-snug line-clamp-2">{h.mechanism}</div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      );
+
     case "followups":
       return (
         <div className="animate-rise-delay-4">
@@ -316,7 +570,8 @@ export function AnswerCard({ answer, onFollowup, language }: {
   const t = UI[language];
   const kpiBlocks = answer.blocks.filter((b) => b.type === "kpi");
   const visualBlocks = answer.blocks.filter((b) =>
-    b.type === "trend" || b.type === "breakdown" || b.type === "drivers" || b.type === "theme_chart"
+    b.type === "trend" || b.type === "breakdown" || b.type === "drivers" || b.type === "theme_chart" ||
+    b.type === "state_theme_table" || b.type === "ai_analysis" || b.type === "theme_matrix" || b.type === "pillar_grid"
   );
   const inferenceBlocks = answer.blocks.filter((b) =>
     b.type === "interpretation" || b.type === "remedials"
@@ -355,7 +610,7 @@ export function AnswerCard({ answer, onFollowup, language }: {
       {/* MIDDLE — Visual */}
       {visualBlocks.length > 0 && (
         <>
-          <SandwichLabel icon={BarChart3} label="Visual" hint="trend · breakdown · drivers" />
+          <SandwichLabel icon={BarChart3} label="Visual" hint="trend · breakdown · themes · state comparison" />
           <div className="space-y-3">
             {visualBlocks.map((b, i) => (
               <BlockRenderer key={`v-${i}`} block={b} language={language} />
