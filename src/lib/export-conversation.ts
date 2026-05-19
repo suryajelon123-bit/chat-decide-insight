@@ -36,6 +36,24 @@ function blockToLines(b: AnswerBlock, t: ReturnType<typeof getT>): string[] {
     case "remedials":    return [`${t.remedials}:`, ...b.items.map((i) => ` • ${i}`)];
     case "breakdown":    return [`${b.label}:`, ...b.rows.map((r) => ` • ${r.name}: ${r.value}${r.delta ? ` (${r.delta})` : ""}`)];
     case "theme_chart":  return [`${b.label}:`, ...b.slices.map((s) => ` • ${s.name}: ${s.share}%`)];
+    case "state_theme_table": return [
+      `${b.label} — ${b.biharLabel} vs ${b.karnLabel}:`,
+      ...b.rows.map((r) => ` • ${r.emoji} ${r.name}: Bihar ${r.bihar}, Karnataka ${r.karnataka}`),
+    ];
+    case "ai_analysis":  return [
+      `${b.title}:`,
+      ...b.paragraphs.map((p) => ` ${p}`),
+      ...(b.table ? [`${b.table.headers.join(" | ")}`, ...b.table.rows.map((r) => r.join(" | "))] : []),
+    ];
+    case "theme_matrix": return [
+      b.insightLabel + ": " + b.pmInsight,
+      ...b.rows.map((r) => ` • ${r.emoji} ${r.name}: ${r.cells.join(", ")} — vel ${r.vel}`),
+    ];
+    case "pillar_grid":  return [
+      `Shared pillars (${b.sharedCount}): ${b.shared.map((s) => s.name).join(", ")}`,
+      `Bihar hurdles (${b.biharCount}): ${b.biharHurdles.map((h) => h.name).join(", ")}`,
+      `Karnataka hurdles (${b.karnCount}): ${b.karnHurdles.map((h) => h.name).join(", ")}`,
+    ];
     case "followups":    return [];
   }
 }

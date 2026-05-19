@@ -263,7 +263,8 @@ function BlockRenderer({ block, onFollowup, language }: {
                 iconType="circle"
                 iconSize={7}
                 wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }}
-                formatter={(value: string, entry: { payload?: { focused?: boolean } }) => (
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                formatter={(value: string, entry: any) => (
                   <span style={{
                     color: entry.payload?.focused ? "oklch(0.96 0.005 240)" : "oklch(0.68 0.018 240)",
                     fontWeight: entry.payload?.focused ? 700 : 400,
