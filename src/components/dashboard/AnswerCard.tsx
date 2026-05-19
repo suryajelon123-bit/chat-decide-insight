@@ -1,4 +1,5 @@
 import { ArrowDownRight, ArrowUpRight, Database, Lightbulb, ListChecks, Sparkles, TrendingUp, ChevronRight, Share2, Target, BarChart3, Brain } from "lucide-react";
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { UI, type Answer, type AnswerBlock, type Language } from "@/lib/mock-data";
 
 function SandwichLabel({ icon: Icon, label, hint }: { icon: typeof Target; label: string; hint: string }) {
@@ -144,6 +145,72 @@ function BlockRenderer({ block, onFollowup, language }: { block: AnswerBlock; on
           </ol>
         </div>
       );
+    case "theme_chart": {
+      const COLORS = [
+        "#f87171", "#fb923c", "#fbbf24", "#a3e635", "#34d399",
+        "#22d3ee", "#818cf8", "#c084fc", "#f472b6", "#94a3b8",
+      ];
+      const total = block.slices.reduce((a, s) => a + s.share, 0);
+      return (
+        <div className="animate-rise-delay-1 rounded-xl bg-surface-2 p-5 ring-fact">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{block.label}</div>
+            <Badge tone="fact" language={language} />
+          </div>
+          <ResponsiveContainer width="100%" height={260}>
+            <PieChart>
+              <Pie
+                data={block.slices}
+                dataKey="share"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                innerRadius={58}
+                outerRadius={95}
+                paddingAngle={2}
+                strokeWidth={0}
+              >
+                {block.slices.map((s, i) => (
+                  <Cell
+                    key={s.name}
+                    fill={COLORS[i % COLORS.length]}
+                    opacity={s.focused ? 1 : 0.55}
+                    stroke={s.focused ? "white" : "transparent"}
+                    strokeWidth={s.focused ? 2 : 0}
+                  />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(value: number, name: string) => [
+                  `${((value / total) * 100).toFixed(1)}%`,
+                  name,
+                ]}
+                contentStyle={{
+                  backgroundColor: "hsl(var(--surface-2))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "8px",
+                  fontSize: "12px",
+                  color: "hsl(var(--foreground))",
+                }}
+              />
+              <Legend
+                iconType="circle"
+                iconSize={8}
+                formatter={(value: string, entry: { payload?: { focused?: boolean } }) => (
+                  <span style={{
+                    fontSize: "11px",
+                    color: entry.payload?.focused ? "white" : "hsl(var(--muted-foreground))",
+                    fontWeight: entry.payload?.focused ? 700 : 400,
+                  }}>
+                    {value}
+                  </span>
+                )}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      );
+    }
     case "followups":
       return (
         <div className="animate-rise-delay-4">
@@ -195,12 +262,12 @@ export function AnswerCard({ answer, onFollowup, language }: { answer: Answer; o
       </div>
 
       {/* MIDDLE — Visual */}
-      {answer.blocks.some((b) => b.type === "trend" || b.type === "breakdown" || b.type === "drivers") && (
+      {answer.blocks.some((b) => b.type === "trend" || b.type === "breakdown" || b.type === "drivers" || b.type === "theme_chart") && (
         <>
           <SandwichLabel icon={BarChart3} label="Visual" hint="trend · breakdown · drivers" />
           <div className="space-y-3">
             {answer.blocks
-              .filter((b) => b.type === "trend" || b.type === "breakdown" || b.type === "drivers")
+              .filter((b) => b.type === "trend" || b.type === "breakdown" || b.type === "drivers" || b.type === "theme_chart")
               .map((b, i) => (
                 <BlockRenderer key={`v-${i}`} block={b} language={language} />
               ))}

@@ -9,7 +9,8 @@ export type AnswerBlock =
   | { type: "drivers"; items: { label: string; impact: string; tone: "neg" | "pos" | "neutral" }[] }
   | { type: "remedials"; items: string[] }
   | { type: "breakdown"; label: string; rows: { name: string; value: string; delta?: string; tone?: "pos" | "neg" }[] }
-  | { type: "followups"; items: string[] };
+  | { type: "followups"; items: string[] }
+  | { type: "theme_chart"; label: string; slices: { name: string; shortName: string; share: number; focused: boolean }[] };
 
 export type Source = { table: string; filters: string[]; timeRange: string; rows: number };
 export type Answer = { id: string; question: string; language: Language; source: Source; blocks: AnswerBlock[]; createdAt: string };
@@ -986,9 +987,21 @@ function buildThemes(ctx: AnswerContext, lang: Language, question: string): Answ
     ),
   };
 
+  const chartBlock: AnswerBlock = {
+    type: "theme_chart",
+    label: tLabel("Theme distribution (semantic-deduplicated)", "विषय वितरण (शब्दार्थ-डीडुप)", "தலைப்பு பகிர்வு (சொல்-டீடப்)", "ವಿಷಯ ವಿತರಣೆ (ಸೆಮ್ಯಾಂಟಿಕ್-ಡೀಡಪ್)"),
+    slices: rows.map((r) => ({
+      name: THEME_KB[r.k].label,
+      shortName: THEME_KB[r.k].label.split(" ")[0],
+      share: r.share,
+      focused: r.k === topKey,
+    })),
+  };
+
   return [
     { type: "kpi", label: tLabel("Active themes", "सक्रिय विषय", "செயலில் உள்ள தலைப்புகள்", "ಸಕ್ರಿಯ ವಿಷಯಗಳು"), value: String(rows.length), delta: tLabel(`Lead: ${top.label}`, `अग्रणी: ${top.label}`, `முன்னணி: ${top.label}`, `ಮುಂಚೂಣಿ: ${top.label}`), deltaDir: "flat" },
     factTriggerAction,
+    chartBlock,
     topThemes,
     dim3,
     interp,
