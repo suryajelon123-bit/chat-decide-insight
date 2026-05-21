@@ -1,4 +1,5 @@
-import { ArrowDownRight, ArrowUpRight, Database, Lightbulb, ListChecks, Sparkles, TrendingUp, ChevronRight, Share2, Target, BarChart3, Brain } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Database, Lightbulb, ListChecks, Sparkles, TrendingUp, ChevronRight, Share2, Target, BarChart3, Brain, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { UI, type Answer, type AnswerBlock, type Language } from "@/lib/mock-data";
 
 function SandwichLabel({ icon: Icon, label, hint }: { icon: typeof Target; label: string; hint: string }) {
