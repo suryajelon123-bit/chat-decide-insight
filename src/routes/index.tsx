@@ -145,7 +145,7 @@ function Index() {
         </header>
 
         <div className="min-h-0 flex-1">
-          <ChatThread turns={turns} busy={busy} onFollowup={handleAsk} language={language} starters={starters} />
+          <ChatThread turns={turns} busy={busy} onFollowup={handleAsk} language={language} starters={starters} role={role} />
         </div>
 
         <Composer onSubmit={handleAsk} suggestions={starters.slice(0, 3)} busy={busy} language={language} />

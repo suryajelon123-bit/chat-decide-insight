@@ -1,4 +1,5 @@
-import { ArrowDownRight, ArrowUpRight, Database, Lightbulb, ListChecks, Sparkles, TrendingUp, ChevronRight, Share2, Target, BarChart3, Brain } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Database, Lightbulb, ListChecks, Sparkles, TrendingUp, ChevronRight, Share2, Target, BarChart3, Brain, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { UI, type Answer, type AnswerBlock, type Language } from "@/lib/mock-data";
 
 function SandwichLabel({ icon: Icon, label, hint }: { icon: typeof Target; label: string; hint: string }) {
@@ -165,8 +166,80 @@ function BlockRenderer({ block, onFollowup, language }: { block: AnswerBlock; on
   }
 }
 
-export function AnswerCard({ answer, onFollowup, language }: { answer: Answer; onFollowup?: (q: string) => void; language: Language }) {
+function summarizeForLLM(answer: Answer): string {
+  const lines: string[] = [`Dataset: ${answer.source.table} · ${answer.source.timeRange} · ${answer.source.rows} rows`];
+  for (const b of answer.blocks) {
+    if (b.type === "kpi") lines.push(`KPI · ${b.label}: ${b.value}${b.delta ? ` (${b.delta})` : ""}`);
+    else if (b.type === "trend") lines.push(`Trend · ${b.label} (${b.period}): ${b.points.join(", ")}`);
+    else if (b.type === "breakdown") lines.push(`Breakdown · ${b.label}:\n${b.rows.map((r) => `  - ${r.name}: ${r.value}${r.delta ? ` (${r.delta})` : ""}`).join("\n")}`);
+    else if (b.type === "drivers") lines.push(`Drivers:\n${b.items.map((d) => `  - ${d.label}: ${d.impact}`).join("\n")}`);
+  }
+  return lines.join("\n");
+}
+
+export function AnswerCard({ answer, onFollowup, language, role }: { answer: Answer; onFollowup?: (q: string) => void; language: Language; role?: string }) {
   const t = UI[language];
+
+  const baseInterpretation = useMemo(
+    () => answer.blocks.find((b) => b.type === "interpretation") as Extract<AnswerBlock, { type: "interpretation" }> | undefined,
+    [answer]
+  );
+  const baseRemedials = useMemo(
+    () => answer.blocks.find((b) => b.type === "remedials") as Extract<AnswerBlock, { type: "remedials" }> | undefined,
+    [answer]
+  );
+
+  const [aiText, setAiText] = useState<string | null>(null);
+  const [aiActions, setAiActions] = useState<string[] | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!baseInterpretation && !baseRemedials) return;
+    let cancelled = false;
+    setAiLoading(true);
+    setAiError(null);
+    fetch("/api/interpret", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        question: answer.question,
+        role: role ?? "Program Manager",
+        language,
+        context: summarizeForLLM(answer),
+        baseline: {
+          interpretation: baseInterpretation?.text,
+          remedials: baseRemedials?.items,
+        },
+      }),
+    })
+      .then(async (r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json() as Promise<{ interpretation: string; remedials: string[] }>;
+      })
+      .then((d) => {
+        if (cancelled) return;
+        setAiText(d.interpretation);
+        setAiActions(d.remedials);
+      })
+      .catch((e) => {
+        if (!cancelled) setAiError(e instanceof Error ? e.message : "AI unavailable");
+      })
+      .finally(() => {
+        if (!cancelled) setAiLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [answer.id, role, language, baseInterpretation, baseRemedials, answer]);
+
+  const interpretationBlock: AnswerBlock | undefined = aiText
+    ? { type: "interpretation", text: aiText }
+    : baseInterpretation;
+  const remedialsBlock: AnswerBlock | undefined = aiActions
+    ? { type: "remedials", items: aiActions }
+    : baseRemedials;
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
@@ -209,15 +282,18 @@ export function AnswerCard({ answer, onFollowup, language }: { answer: Answer; o
       )}
 
       {/* BOTTOM — Strategic Inference / So What? */}
-      {answer.blocks.some((b) => b.type === "interpretation" || b.type === "remedials") && (
+      {(interpretationBlock || remedialsBlock) && (
         <>
-          <SandwichLabel icon={Brain} label="Strategic Inference" hint="so what — and what to do" />
+          <div className="flex items-center justify-between">
+            <SandwichLabel icon={Brain} label="Strategic Inference" hint="so what — and what to do" />
+            <span className="inline-flex items-center gap-1 rounded-full bg-insight/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-insight">
+              {aiLoading ? <Loader2 className="h-2.5 w-2.5 animate-spin" /> : <Sparkles className="h-2.5 w-2.5" />}
+              {aiLoading ? "AI thinking" : aiText ? "AI · Gemini" : aiError ? "AI offline" : "Baseline"}
+            </span>
+          </div>
           <div className="space-y-3">
-            {answer.blocks
-              .filter((b) => b.type === "interpretation" || b.type === "remedials")
-              .map((b, i) => (
-                <BlockRenderer key={`s-${i}`} block={b} language={language} />
-              ))}
+            {interpretationBlock && <BlockRenderer block={interpretationBlock} language={language} />}
+            {remedialsBlock && <BlockRenderer block={remedialsBlock} language={language} />}
           </div>
         </>
       )}
@@ -230,3 +306,4 @@ export function AnswerCard({ answer, onFollowup, language }: { answer: Answer; o
     </div>
   );
 }
+

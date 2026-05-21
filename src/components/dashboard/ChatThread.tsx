@@ -9,9 +9,10 @@ type Props = {
   onFollowup: (q: string) => void;
   language: Language;
   starters: string[];
+  role?: string;
 };
 
-export function ChatThread({ turns, busy, onFollowup, language, starters }: Props) {
+export function ChatThread({ turns, busy, onFollowup, language, starters, role }: Props) {
   const t = UI[language];
   const endRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -69,7 +70,7 @@ export function ChatThread({ turns, busy, onFollowup, language, starters }: Prop
                 <Sparkles className="h-3.5 w-3.5 text-background" />
               </div>
               <div className="min-w-0 flex-1">
-                <AnswerCard answer={tn.answer} onFollowup={onFollowup} language={language} />
+                <AnswerCard answer={tn.answer} onFollowup={onFollowup} language={language} role={role} />
               </div>
             </div>
           )
