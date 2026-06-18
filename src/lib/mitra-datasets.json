@@ -1,0 +1,299 @@
+{
+  "nagaland_mi_story": {
+    "total_messages": 143094,
+    "longform_messages": 89763,
+    "unique_sessions": 8057,
+    "unique_senders": 12,
+    "sources": {
+      "WEB": 143094
+    },
+    "stages": {
+      "SCHOOL_NAME": 13531,
+      "PTM_DISCUSSION_TOPICS": 11904,
+      "SCHOOL_EXPERIENCE_FEEDBACK": 10649,
+      "PTM_SCHEDULING_PREFERENCE": 10174,
+      "PTM_ATTENDANCE_BARRIERS": 9802,
+      "RESOURCE_AVAILABILITY": 9550,
+      "PROGRAM_AWARENESS": 9405,
+      "SCHOOL_REPUTATION": 9243,
+      "INTRODUCTION": 7056,
+      "APPRECIATION": 4759,
+      "STATE_7": 2566,
+      "STATE_5": 2129,
+      "STATE_9": 2103,
+      "STATE_15": 2053,
+      "STATE_13": 1963
+    },
+    "months": {
+      "April 2026": 93859,
+      "June 2026": 7104,
+      "May 2026": 42131
+    },
+    "themes": {
+      "Other": 112855,
+      "Legal Documents": 17477,
+      "Teacher Quality": 9465,
+      "Infrastructure": 8583,
+      "Parental Attitude": 4749,
+      "Distance & Access": 1913,
+      "Poverty & Economic": 387,
+      "Safety": 185,
+      "Child Marriage": 137,
+      "Substance Abuse": 7
+    }
+  },
+  "wlc_mi_karnataka": {
+    "total_messages": 105872,
+    "longform_messages": 66172,
+    "unique_sessions": 7256,
+    "unique_senders": 8,
+    "sources": {
+      "WEB": 105872
+    },
+    "stages": {
+      "SCHOOL_NAME": 13145,
+      "PTM_DISCUSSION_TOPICS": 11716,
+      "SCHOOL_EXPERIENCE_FEEDBACK": 10490,
+      "PTM_SCHEDULING_PREFERENCE": 10025,
+      "PTM_ATTENDANCE_BARRIERS": 9662,
+      "RESOURCE_AVAILABILITY": 9415,
+      "PROGRAM_AWARENESS": 9271,
+      "SCHOOL_REPUTATION": 9109,
+      "INTRODUCTION": 6881,
+      "APPRECIATION": 4596,
+      "STATE_7": 810,
+      "STATE_5": 690,
+      "STATE_9": 577,
+      "STATE_16": 537,
+      "STATE_2": 528
+    },
+    "months": {
+      "April 2026": 93859,
+      "May 2026": 12013
+    },
+    "themes": {
+      "Other": 85380,
+      "Legal Documents": 13236,
+      "Teacher Quality": 8468,
+      "Infrastructure": 8134,
+      "Parental Attitude": 1060,
+      "Distance & Access": 951,
+      "Poverty & Economic": 271,
+      "Safety": 69,
+      "Child Marriage": 41,
+      "Substance Abuse": 3
+    }
+  },
+  "slc_ka_mi": {
+    "total_messages": 143094,
+    "longform_messages": 89763,
+    "unique_sessions": 8057,
+    "unique_senders": 12,
+    "sources": {
+      "WEB": 143094
+    },
+    "stages": {
+      "SCHOOL_NAME": 13531,
+      "PTM_DISCUSSION_TOPICS": 11904,
+      "SCHOOL_EXPERIENCE_FEEDBACK": 10649,
+      "PTM_SCHEDULING_PREFERENCE": 10174,
+      "PTM_ATTENDANCE_BARRIERS": 9802,
+      "RESOURCE_AVAILABILITY": 9550,
+      "PROGRAM_AWARENESS": 9405,
+      "SCHOOL_REPUTATION": 9243,
+      "INTRODUCTION": 7056,
+      "APPRECIATION": 4759,
+      "STATE_7": 2566,
+      "STATE_5": 2129,
+      "STATE_9": 2103,
+      "STATE_15": 2053,
+      "STATE_13": 1963
+    },
+    "months": {
+      "April 2026": 93859,
+      "June 2026": 7104,
+      "May 2026": 42131
+    },
+    "themes": {
+      "Other": 112855,
+      "Legal Documents": 17477,
+      "Teacher Quality": 9465,
+      "Infrastructure": 8583,
+      "Parental Attitude": 4749,
+      "Distance & Access": 1913,
+      "Poverty & Economic": 387,
+      "Safety": 185,
+      "Child Marriage": 137,
+      "Substance Abuse": 7
+    }
+  },
+  "ylc_ka": {
+    "total_messages": 143094,
+    "longform_messages": 89763,
+    "unique_sessions": 8057,
+    "unique_senders": 12,
+    "sources": {
+      "WEB": 143094
+    },
+    "stages": {
+      "SCHOOL_NAME": 13531,
+      "PTM_DISCUSSION_TOPICS": 11904,
+      "SCHOOL_EXPERIENCE_FEEDBACK": 10649,
+      "PTM_SCHEDULING_PREFERENCE": 10174,
+      "PTM_ATTENDANCE_BARRIERS": 9802,
+      "RESOURCE_AVAILABILITY": 9550,
+      "PROGRAM_AWARENESS": 9405,
+      "SCHOOL_REPUTATION": 9243,
+      "INTRODUCTION": 7056,
+      "APPRECIATION": 4759,
+      "STATE_7": 2566,
+      "STATE_5": 2129,
+      "STATE_9": 2103,
+      "STATE_15": 2053,
+      "STATE_13": 1963
+    },
+    "months": {
+      "April 2026": 93859,
+      "June 2026": 7104,
+      "May 2026": 42131
+    },
+    "themes": {
+      "Other": 112855,
+      "Legal Documents": 17477,
+      "Teacher Quality": 9465,
+      "Infrastructure": 8583,
+      "Parental Attitude": 4749,
+      "Distance & Access": 1913,
+      "Poverty & Economic": 387,
+      "Safety": 185,
+      "Child Marriage": 137,
+      "Substance Abuse": 7
+    }
+  },
+  "wlc_ka_chavadi": {
+    "total_messages": 105672,
+    "longform_messages": 66041,
+    "unique_sessions": 7243,
+    "unique_senders": 8,
+    "sources": {
+      "WEB": 105672
+    },
+    "stages": {
+      "SCHOOL_NAME": 13121,
+      "PTM_DISCUSSION_TOPICS": 11694,
+      "SCHOOL_EXPERIENCE_FEEDBACK": 10469,
+      "PTM_SCHEDULING_PREFERENCE": 10004,
+      "PTM_ATTENDANCE_BARRIERS": 9639,
+      "RESOURCE_AVAILABILITY": 9391,
+      "PROGRAM_AWARENESS": 9248,
+      "SCHOOL_REPUTATION": 9089,
+      "INTRODUCTION": 6868,
+      "APPRECIATION": 4587,
+      "STATE_7": 810,
+      "STATE_5": 690,
+      "STATE_9": 577,
+      "STATE_16": 537,
+      "STATE_2": 528
+    },
+    "months": {
+      "April 2026": 93859,
+      "May 2026": 11813
+    },
+    "themes": {
+      "Other": 85214,
+      "Legal Documents": 13213,
+      "Teacher Quality": 8448,
+      "Infrastructure": 8120,
+      "Parental Attitude": 1060,
+      "Distance & Access": 951,
+      "Poverty & Economic": 271,
+      "Safety": 69,
+      "Child Marriage": 41,
+      "Substance Abuse": 3
+    }
+  },
+  "wlc_bihar_chaupal": {
+    "total_messages": 105636,
+    "longform_messages": 66024,
+    "unique_sessions": 7238,
+    "unique_senders": 8,
+    "sources": {
+      "WEB": 105636
+    },
+    "stages": {
+      "SCHOOL_NAME": 13111,
+      "PTM_DISCUSSION_TOPICS": 11686,
+      "SCHOOL_EXPERIENCE_FEEDBACK": 10464,
+      "PTM_SCHEDULING_PREFERENCE": 10000,
+      "PTM_ATTENDANCE_BARRIERS": 9636,
+      "RESOURCE_AVAILABILITY": 9390,
+      "PROGRAM_AWARENESS": 9248,
+      "SCHOOL_REPUTATION": 9089,
+      "INTRODUCTION": 6863,
+      "APPRECIATION": 4587,
+      "STATE_7": 810,
+      "STATE_5": 690,
+      "STATE_9": 577,
+      "STATE_16": 537,
+      "STATE_2": 528
+    },
+    "months": {
+      "April 2026": 93859,
+      "May 2026": 11777
+    },
+    "themes": {
+      "Other": 85185,
+      "Legal Documents": 13207,
+      "Teacher Quality": 8442,
+      "Infrastructure": 8119,
+      "Parental Attitude": 1060,
+      "Distance & Access": 951,
+      "Poverty & Economic": 271,
+      "Safety": 69,
+      "Child Marriage": 41,
+      "Substance Abuse": 3
+    }
+  },
+  "wlc_mi_bihar": {
+    "total_messages": 105856,
+    "longform_messages": 66161,
+    "unique_sessions": 7255,
+    "unique_senders": 8,
+    "sources": {
+      "WEB": 105856
+    },
+    "stages": {
+      "SCHOOL_NAME": 13142,
+      "PTM_DISCUSSION_TOPICS": 11712,
+      "SCHOOL_EXPERIENCE_FEEDBACK": 10488,
+      "PTM_SCHEDULING_PREFERENCE": 10025,
+      "PTM_ATTENDANCE_BARRIERS": 9662,
+      "RESOURCE_AVAILABILITY": 9414,
+      "PROGRAM_AWARENESS": 9269,
+      "SCHOOL_REPUTATION": 9107,
+      "INTRODUCTION": 6880,
+      "APPRECIATION": 4595,
+      "STATE_7": 810,
+      "STATE_5": 690,
+      "STATE_9": 577,
+      "STATE_16": 537,
+      "STATE_2": 528
+    },
+    "months": {
+      "April 2026": 93859,
+      "May 2026": 11997
+    },
+    "themes": {
+      "Other": 85366,
+      "Legal Documents": 13234,
+      "Teacher Quality": 8466,
+      "Infrastructure": 8134,
+      "Parental Attitude": 1060,
+      "Distance & Access": 951,
+      "Poverty & Economic": 271,
+      "Safety": 69,
+      "Child Marriage": 41,
+      "Substance Abuse": 3
+    }
+  }
+}
