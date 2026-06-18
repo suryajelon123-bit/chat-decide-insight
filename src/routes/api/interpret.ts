@@ -3,6 +3,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway";
+import { MITRA_SYSTEM_PROMPT } from "@/lib/mitra-system-prompt";
+import mitraDatasets from "@/lib/mitra-datasets.json";
 
 const LANG_NAME: Record<string, string> = {
   en: "English",
@@ -10,6 +12,24 @@ const LANG_NAME: Record<string, string> = {
   ta: "Tamil (தமிழ்)",
   kn: "Kannada (ಕನ್ನಡ)",
 };
+
+function selectDatasets(question: string): Record<string, unknown> {
+  const q = question.toLowerCase();
+  const all = mitraDatasets as Record<string, unknown>;
+  const picks: string[] = [];
+  if (/bihar|chaupal|patna/.test(q)) picks.push("wlc_bihar_chaupal", "wlc_mi_bihar");
+  if (/karnataka|chavadi|mysuru|mysore|bengaluru/.test(q))
+    picks.push("wlc_ka_chavadi", "wlc_mi_karnataka", "slc_ka_mi", "ylc_ka");
+  if (/nagaland/.test(q)) picks.push("nagaland_mi_story");
+  if (/slc|school leader/.test(q)) picks.push("slc_ka_mi");
+  if (/ylc|youth/.test(q)) picks.push("ylc_ka");
+  if (/wlc|women/.test(q))
+    picks.push("wlc_ka_chavadi", "wlc_bihar_chaupal", "wlc_mi_karnataka", "wlc_mi_bihar");
+  const chosen = (picks.length ? Array.from(new Set(picks)) : Object.keys(all)).slice(0, 4);
+  const out: Record<string, unknown> = {};
+  for (const k of chosen) out[k] = all[k];
+  return out;
+}
 
 export const Route = createFileRoute("/api/interpret")({
   server: {
@@ -28,22 +48,33 @@ export const Route = createFileRoute("/api/interpret")({
 
         const lang = LANG_NAME[body.language ?? "en"] ?? "English";
         const role = body.role ?? "Program Manager";
+        const question = body.question ?? "";
+        const datasetSlice = selectDatasets(question);
 
-        const system = `You are MITRA's data interpretation assistant for Shikshalokam's Chaupal/Chavadi/MI programs in India. The user is a ${role}. Respond strictly in ${lang}.
-Be concrete, numeric, decision-oriented. NO UX/UI advice. Recommendations must be data actions: A/B tests with sample size + MDE + primary metric, DiD cohort comparisons, SLA thresholds, escalation rules, segmentation cuts, root-cause investigations. Tie every action to a measurable KPI.`;
+        const system = `${MITRA_SYSTEM_PROMPT}
 
-        const prompt = `Question: ${body.question ?? ""}
+ACTIVE ROLE: ${role}
+RESPONSE LANGUAGE: ${lang}
 
-Grounded data context (numbers from MITRA logs):
+For Program Manager / Org Admin / Tenant Admin the Recommended Actions MUST be A/B tests (state sample size, MDE, primary KPI), DiD cohort comparisons, SLA / escalation rules, segmentation cuts, or root-cause investigations. NEVER UX/UI tweaks.
+
+Return ONLY two fields (interpretation, remedials) for an answer card:
+- interpretation: 3-5 sentences in ${lang}, headline-style first line, then biggest finding + hidden insight + why-it-matters.
+- remedials: 3-5 data-driven actions (<=25 words each), ranked by impact, each naming a metric/threshold/experiment.`;
+
+        const prompt = `User question: ${question}
+
+Aggregated MITRA telemetry (ground truth; do not invent numbers):
+${JSON.stringify(datasetSlice)}
+
+Dashboard context block:
 ${body.context ?? "(none)"}
 
-Baseline interpretation (rewrite/improve it; do not contradict numbers):
+Baseline interpretation to improve (do not contradict numbers):
 ${body.baseline?.interpretation ?? "(none)"}
 
-Baseline actions:
-${(body.baseline?.remedials ?? []).map((r, i) => `${i + 1}. ${r}`).join("\n") || "(none)"}
-
-Produce a sharper interpretation (2-4 sentences) tailored to the ${role}, and 3-5 data-driven next actions.`;
+Baseline actions to sharpen:
+${(body.baseline?.remedials ?? []).map((r, i) => `${i + 1}. ${r}`).join("\n") || "(none)"}`;
 
         try {
           const gateway = createLovableAiGatewayProvider(key);
