@@ -79,19 +79,21 @@ ${(body.baseline?.remedials ?? []).map((r, i) => `${i + 1}. ${r}`).join("\n") ||
         try {
           const gateway = createLovableAiGatewayProvider(key);
           const model = gateway("google/gemini-3-flash-preview");
-          const { experimental_output } = await generateText({
-            model,
-            system,
-            prompt,
-            experimental_output: Output.object({
-              schema: z.object({
-                interpretation: z.string().min(20),
-                remedials: z.array(z.string().min(8)).min(2).max(6),
-              }),
-            }),
+          const schema = z.object({
+            interpretation: z.string().min(20),
+            remedials: z.array(z.string().min(8)).min(2).max(6),
           });
-
-          return Response.json(experimental_output);
+          const { text } = await generateText({
+            model,
+            system: `${system}\n\nReturn ONLY a single JSON object matching: {"interpretation": string, "remedials": string[]}. No markdown, no prose.`,
+            prompt,
+          });
+          const cleaned = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/```$/i, "").trim();
+          const start = cleaned.indexOf("{");
+          const end = cleaned.lastIndexOf("}");
+          const jsonStr = start >= 0 && end > start ? cleaned.slice(start, end + 1) : cleaned;
+          const parsed = schema.parse(JSON.parse(jsonStr));
+          return Response.json(parsed);
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           const status = /429/.test(msg) ? 429 : /402/.test(msg) ? 402 : 500;
